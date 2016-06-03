@@ -57,7 +57,7 @@ static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int siz
                                   int page_size, struct stream_cfg *cfg) {
 	struct stream_context *ctx;
 
-	ctx = (stream_context *)malloc(sizeof *ctx);
+	ctx = (struct stream_context *)malloc(sizeof *ctx);
 	if (!ctx)
 		return NULL;
 
@@ -321,7 +321,7 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
 
       write(sockfd, "done", sizeof "done");
 
-      rem_dest = malloc(sizeof *rem_dest);
+      rem_dest = (struct stream_dest *)malloc(sizeof *rem_dest);
       if (!rem_dest) {
             goto out;
       }
