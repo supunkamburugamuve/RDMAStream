@@ -426,7 +426,7 @@ out:
       return rem_dest;
 }
 
-int main(int argv, char *argv[]) {
+int main(int argv, char *argc[]) {
 	struct ibv_device      **dev_list;
 	// we will use the first device
 	struct ibv_device *ib_dev;
@@ -441,7 +441,7 @@ int main(int argv, char *argv[]) {
 	// number of retries made
 	int routs;
 	// server name
-	char *servername = argv[0];
+	char *servername = argc[0];
 	// MTU for ib
 	enum ibv_mtu mtu = IBV_MTU_1024;
 
