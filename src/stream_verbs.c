@@ -333,7 +333,7 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
             goto out;
       }
       sscanf(msg, "%x:%x:%x", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn);
-
+      printf("Finished client exchange");
 out:
       close(sockfd);
       return rem_dest;
@@ -423,7 +423,7 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
       }
 
       read(connfd, msg, sizeof msg);
-
+      printf("Finished server exchange");
 out:
       close(connfd);
       return rem_dest;
@@ -508,7 +508,7 @@ int main(int argv, char *argc[]) {
 		return 1;
 	}
 
-	printf("  local address:  LID 0x%04x, QPN 0x%06x, PSN 0x%06x\n",
+	printf("local address:  LID 0x%04x, QPN 0x%06x, PSN 0x%06x\n",
 			self_dest.lid, self_dest.qpn, self_dest.psn);
 
 	if (servername) {
