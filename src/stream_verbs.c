@@ -439,6 +439,7 @@ int main(int argv, char *argc[]) {
 	int size = 4096;
 	// system page size
 	int page_size = sysconf(_SC_PAGESIZE);
+	int ib_port = 1;
 	// port
 	int port = 10456;
 	// number of retries made
@@ -478,9 +479,9 @@ int main(int argv, char *argc[]) {
 	cfg.buff_size = size;
 	cfg.use_event = 1;
 	cfg.rx_depth = 1;
-	cfg.port = port;
+	cfg.port = ib_port;
 
-	ctx = stream_init_ctx(ib_dev, size, port, page_size, &cfg);
+	ctx = stream_init_ctx(ib_dev, size, ib_port, page_size, &cfg);
     if (!ctx){
 		  fprintf(stderr, "Couldn't initialize IB\n");
 		  return 1;
@@ -499,7 +500,7 @@ int main(int argv, char *argc[]) {
 		}
 	}
 
-	self_dest.lid = stream_get_local_lid(ctx->context, port);
+	self_dest.lid = stream_get_local_lid(ctx->context, ib_port);
 	self_dest.qpn = ctx->qp->qp_num;
 	self_dest.psn = lrand48() & 0xffffff;
 	if (!self_dest.lid) {
@@ -513,7 +514,7 @@ int main(int argv, char *argc[]) {
 	if (servername) {
 		rem_dest = stream_client_exch_dest(servername, port, &self_dest);
 	} else {
-		rem_dest = stream_server_exch_dest(ctx, port, mtu, port, &self_dest);
+		rem_dest = stream_server_exch_dest(ctx, ib_port, mtu, port, &self_dest);
 	}
 
 	if (!rem_dest) {
@@ -525,7 +526,7 @@ int main(int argv, char *argc[]) {
 	             rem_dest->lid, rem_dest->qpn, rem_dest->psn);
 
 	if (servername) {
-		if (stream_connect_ctx(ctx, port, self_dest.psn, mtu, rem_dest)) {
+		if (stream_connect_ctx(ctx, ib_port, self_dest.psn, mtu, rem_dest)) {
 			  return 1;
 		}
 	}
