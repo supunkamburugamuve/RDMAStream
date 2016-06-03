@@ -72,6 +72,13 @@ static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int siz
 	}
 	memset(ctx->buf, 0, size);
 
+	ctx->context = ibv_open_device(ib_dev);
+	if (!ctx->context) {
+		fprintf(stderr, "Couldn't get context for %s\n",
+			  ibv_get_device_name(ib_dev));
+		return NULL;
+	}
+
 	if (cfg->use_event) {
 		ctx->channel = ibv_create_comp_channel(ctx->context);
 		if (!ctx->channel) {
