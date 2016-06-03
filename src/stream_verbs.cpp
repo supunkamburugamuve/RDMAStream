@@ -57,7 +57,7 @@ static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int siz
                                   int page_size, struct stream_cfg *cfg) {
 	struct stream_context *ctx;
 
-	ctx = malloc(sizeof *ctx);
+	ctx = (stream_context *)malloc(sizeof *ctx);
 	if (!ctx)
 		return NULL;
 
