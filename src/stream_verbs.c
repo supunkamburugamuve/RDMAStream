@@ -448,6 +448,7 @@ int main(int argv, char *argc[]) {
 	char *servername = NULL;
 	if (argv > 1) {
 		servername = argc[1];
+		printf("Server name: %s", servername);
 	}
 	// MTU for ib
 	enum ibv_mtu mtu = IBV_MTU_1024;
