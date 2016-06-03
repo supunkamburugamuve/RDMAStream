@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "stream_verbs.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,8 +12,6 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <infiniband/verbs.h>
-
-using namespace std;
 
 enum {
       STREAM_RECV_WRID = 1,
