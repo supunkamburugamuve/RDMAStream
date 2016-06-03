@@ -394,7 +394,7 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
             goto out;
       }
 
-      rem_dest = malloc(sizeof *rem_dest);
+      rem_dest = (struct stream_dest *)malloc(sizeof *rem_dest);
       if (!rem_dest)
             goto out;
 
