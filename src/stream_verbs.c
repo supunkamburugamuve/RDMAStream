@@ -368,10 +368,10 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
 
 		setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &n, sizeof n);
 
-		if (!bind(sockfd, t->ai_addr, t->ai_addrlen))
-			break;
-		close(sockfd);
-		sockfd = -1;
+		if (!bind(sockfd, t->ai_addr, t->ai_addrlen)) {
+			close(sockfd);
+			sockfd = -1;
+		}
 	}
 
 	freeaddrinfo(res);
