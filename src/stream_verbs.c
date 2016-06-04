@@ -276,161 +276,156 @@ static int stream_post_send(struct stream_context *ctx) {
 
 static struct stream_dest *stream_client_exch_dest(const char *servername, int port,
                                      const struct stream_dest *my_dest) {
-      struct addrinfo *res, *t;
-      struct addrinfo hints;
-      hints.ai_family   = AF_UNSPEC;
-      hints.ai_socktype = SOCK_STREAM;
+	struct addrinfo *res, *t;
+	struct addrinfo hints;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
 
-      char *service;
-      char msg[sizeof "0000:000000:000000"];
-      int n;
-      int sockfd = -1;
-      struct stream_dest *rem_dest = NULL;
+	char *service;
+	char msg[sizeof "0000:000000:000000"];
+	int n;
+	int sockfd = -1;
+	struct stream_dest *rem_dest = NULL;
 
-      if (asprintf(&service, "%d", port) < 0)
-            return NULL;
+	if (asprintf(&service, "%d", port) < 0)
+		return NULL;
 
-      n = getaddrinfo(servername, service, &hints, &res);
+	n = getaddrinfo(servername, service, &hints, &res);
 
-      if (n < 0) {
-            fprintf(stderr, "%s for %s:%d\n", gai_strerror(n), servername, port);
-            return NULL;
-      }
+	if (n < 0) {
+		fprintf(stderr, "%s for %s:%d\n", gai_strerror(n), servername, port);
+		return NULL;
+	}
 
-      for (t = res; t; t = t->ai_next) {
-            sockfd = socket(t->ai_family, t->ai_socktype, t->ai_protocol);
-            if (sockfd >= 0) {
-                  if (!connect(sockfd, t->ai_addr, t->ai_addrlen))
-                        break;
-                  close(sockfd);
-                  sockfd = -1;
-            }
-      }
+	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (sockfd >= 0) {
+		if (!connect(sockfd, t->ai_addr, t->ai_addrlen)) {
+			close(sockfd);
+			sockfd = -1;
+		}
+	}
 
-      freeaddrinfo(res);
+	freeaddrinfo(res);
 
-      if (sockfd < 0) {
-            fprintf(stderr, "Couldn't connect to %s:%d\n", servername, port);
-            return NULL;
-      }
+	if (sockfd < 0) {
+		fprintf(stderr, "Couldn't connect to %s:%d\n", servername, port);
+		return NULL;
+	}
 
-      sprintf(msg, "%04x:%06x:%06x", my_dest->lid, my_dest->qpn, my_dest->psn);
-      if (write(sockfd, msg, sizeof msg) != sizeof msg) {
-            fprintf(stderr, "Couldn't send local address\n");
-            goto out;
-      }
+	sprintf(msg, "%04x:%06x:%06x", my_dest->lid, my_dest->qpn, my_dest->psn);
+	if (write(sockfd, msg, sizeof msg) != sizeof msg) {
+		fprintf(stderr, "Couldn't send local address\n");
+		goto out;
+	}
 
-      if (read(sockfd, msg, sizeof msg) != sizeof msg) {
-            perror("client read");
-            fprintf(stderr, "Couldn't read remote address\n");
-            goto out;
-      }
+	if (read(sockfd, msg, sizeof msg) != sizeof msg) {
+		perror("client read");
+		fprintf(stderr, "Couldn't read remote address\n");
+		goto out;
+	}
 
-      write(sockfd, "done", sizeof "done");
+	write(sockfd, "done", sizeof "done");
 
-      rem_dest = (struct stream_dest *)malloc(sizeof *rem_dest);
-      if (!rem_dest) {
-            goto out;
-      }
-      sscanf(msg, "%x:%x:%x", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn);
-      printf("Finished client exchange");
-out:
-      close(sockfd);
-      return rem_dest;
+	rem_dest = (struct stream_dest *) malloc(sizeof *rem_dest);
+	if (!rem_dest) {
+		goto out;
+	}
+	sscanf(msg, "%x:%x:%x", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn);
+	printf("Finished client exchange");
+	out: close(sockfd);
+	return rem_dest;
 }
 
 static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
                                      int ib_port, enum ibv_mtu mtu, int port,
                                      const struct stream_dest *my_dest)
 {
-      struct addrinfo *res, *t;
-      struct addrinfo hints;
-      hints.ai_flags    = AI_PASSIVE;
-      hints.ai_family   = AF_UNSPEC;
-      hints.ai_socktype = SOCK_STREAM;
+	struct addrinfo *res, *t;
+	struct addrinfo hints;
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
 
-      char *service;
-      char msg[sizeof "0000:000000:000000"];
-      int n;
-      int sockfd = -1, connfd;
-      struct stream_dest *rem_dest = NULL;
+	char *service;
+	char msg[sizeof "0000:000000:000000"];
+	int n;
+	int sockfd = -1, connfd;
+	struct stream_dest *rem_dest = NULL;
 
-      if (asprintf(&service, "%d", port) < 0)
-            return NULL;
+	if (asprintf(&service, "%d", port) < 0)
+		return NULL;
 
-      n = getaddrinfo(NULL, service, &hints, &res);
+	n = getaddrinfo(NULL, service, &hints, &res);
 
-      if (n < 0) {
-            fprintf(stderr, "%s for port %d\n", gai_strerror(n), port);
-            return NULL;
-      }
+	if (n < 0) {
+		fprintf(stderr, "%s for port %d\n", gai_strerror(n), port);
+		return NULL;
+	}
 
-      for (t = res; t; t = t->ai_next) {
-            sockfd = socket(t->ai_family, t->ai_socktype, t->ai_protocol);
-            if (sockfd >= 0) {
-                  n = 1;
+	sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (sockfd >= 0) {
+		n = 1;
 
-                  setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &n, sizeof n);
+		setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &n, sizeof n);
 
-                  if (!bind(sockfd, t->ai_addr, t->ai_addrlen))
-                        break;
-                  close(sockfd);
-                  sockfd = -1;
-            }
-      }
+		if (!bind(sockfd, t->ai_addr, t->ai_addrlen))
+			break;
+		close(sockfd);
+		sockfd = -1;
+	}
 
-      freeaddrinfo(res);
+	freeaddrinfo(res);
 
-      if (sockfd < 0) {
-            fprintf(stderr, "Couldn't listen to port %d\n", port);
-            return NULL;
-      }
+	if (sockfd < 0) {
+		fprintf(stderr, "Couldn't listen to port %d\n", port);
+		return NULL;
+	}
 
-      listen(sockfd, 1);
-      connfd = accept(sockfd, NULL, 0);
-      close(sockfd);
-      if (connfd < 0) {
-            fprintf(stderr, "accept() failed\n");
-            return NULL;
-      }
+	listen(sockfd, 1);
+	connfd = accept(sockfd, NULL, 0);
+	close(sockfd);
+	if (connfd < 0) {
+		fprintf(stderr, "accept() failed\n");
+		return NULL;
+	}
 
-      n = read(connfd, msg, sizeof msg);
-      if (n != sizeof msg) {
-            perror("server read");
-            fprintf(stderr, "%d/%d: Couldn't read remote address\n", n, (int) sizeof msg);
-            goto out;
-      }
+	n = read(connfd, msg, sizeof msg);
+	if (n != sizeof msg) {
+		perror("server read");
+		fprintf(stderr, "%d/%d: Couldn't read remote address\n", n,
+				(int) sizeof msg);
+		goto out;
+	}
 
-      rem_dest = (struct stream_dest *)malloc(sizeof *rem_dest);
-      if (!rem_dest)
-            goto out;
+	rem_dest = (struct stream_dest *) malloc(sizeof *rem_dest);
+	if (!rem_dest)
+		goto out;
 
-      sscanf(msg, "%x:%x:%x", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn);
+	sscanf(msg, "%x:%x:%x", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn);
 
-      if (stream_connect_ctx(ctx, ib_port, my_dest->psn, mtu, rem_dest)) {
-            fprintf(stderr, "Couldn't connect to remote QP\n");
-            free(rem_dest);
-            rem_dest = NULL;
-            goto out;
-      }
+	if (stream_connect_ctx(ctx, ib_port, my_dest->psn, mtu, rem_dest)) {
+		fprintf(stderr, "Couldn't connect to remote QP\n");
+		free(rem_dest);
+		rem_dest = NULL;
+		goto out;
+	}
 
-      sprintf(msg, "%04x:%06x:%06x", my_dest->lid, my_dest->qpn, my_dest->psn);
-      if (write(connfd, msg, sizeof msg) != sizeof msg) {
-            fprintf(stderr, "Couldn't send local address\n");
-            free(rem_dest);
-            rem_dest = NULL;
-            goto out;
-      }
+	sprintf(msg, "%04x:%06x:%06x", my_dest->lid, my_dest->qpn, my_dest->psn);
+	if (write(connfd, msg, sizeof msg) != sizeof msg) {
+		fprintf(stderr, "Couldn't send local address\n");
+		free(rem_dest);
+		rem_dest = NULL;
+		goto out;
+	}
 
-      read(connfd, msg, sizeof msg);
-      printf("Finished server exchange");
-out:
-      close(connfd);
-      return rem_dest;
+	read(connfd, msg, sizeof msg);
+	printf("Finished server exchange");
+	out: close(connfd);
+	return rem_dest;
 }
 
 int main(int argv, char *argc[]) {
-	struct ibv_device      **dev_list;
+	struct ibv_device **dev_list;
 	// we will use the first device
 	struct ibv_device *ib_dev;
 	// the context to be used
@@ -454,9 +449,9 @@ int main(int argv, char *argc[]) {
 	enum ibv_mtu mtu = IBV_MTU_1024;
 
 	// self destination identifiers
-	struct stream_dest     self_dest;
+	struct stream_dest self_dest;
 	// remote destination identifiers
-	struct stream_dest    *rem_dest;
+	struct stream_dest *rem_dest;
 
 	// timing
 	struct timeval start, end;
@@ -468,15 +463,15 @@ int main(int argv, char *argc[]) {
 	// get the device list
 	dev_list = ibv_get_device_list(NULL);
 	if (!dev_list) {
-	    fprintf(stderr, "No IB devices found\n");
+		fprintf(stderr, "No IB devices found\n");
 		return 1;
 	}
 
 	// get the first device
 	ib_dev = *dev_list;
 	if (!ib_dev) {
-		  fprintf(stderr, "No IB devices found\n");
-		  return 1;
+		fprintf(stderr, "No IB devices found\n");
+		return 1;
 	}
 
 	struct stream_cfg cfg;
@@ -486,12 +481,12 @@ int main(int argv, char *argc[]) {
 	cfg.port = ib_port;
 
 	ctx = stream_init_ctx(ib_dev, size, ib_port, page_size, &cfg);
-    if (!ctx){
-		  fprintf(stderr, "Couldn't initialize IB\n");
-		  return 1;
+	if (!ctx) {
+		fprintf(stderr, "Couldn't initialize IB\n");
+		return 1;
 	}
 
-    routs = stream_post_recv(ctx, ctx->rx_depth);
+	routs = stream_post_recv(ctx, ctx->rx_depth);
 	if (routs < ctx->rx_depth) {
 		fprintf(stderr, "Couldn't post receive (%d)\n", routs);
 		return 1;
@@ -527,11 +522,11 @@ int main(int argv, char *argc[]) {
 	}
 
 	printf("  remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x\n",
-	             rem_dest->lid, rem_dest->qpn, rem_dest->psn);
+			rem_dest->lid, rem_dest->qpn, rem_dest->psn);
 
 	if (servername) {
 		if (stream_connect_ctx(ctx, ib_port, self_dest.psn, mtu, rem_dest)) {
-			  return 1;
+			return 1;
 		}
 	}
 
@@ -539,8 +534,8 @@ int main(int argv, char *argc[]) {
 
 	if (servername) {
 		if (stream_post_send(ctx)) {
-			  fprintf(stderr, "Couldn't post send\n");
-			  return 1;
+			fprintf(stderr, "Couldn't post send\n");
+			return 1;
 		}
 		ctx->pending |= STREAM_SEND_WRID;
 	}
@@ -553,7 +548,7 @@ int main(int argv, char *argc[]) {
 	while (rcnt < iters || scnt < iters) {
 		if (cfg.use_event) {
 			struct ibv_cq *ev_cq;
-			void          *ev_ctx;
+			void *ev_ctx;
 
 			if (ibv_get_cq_event(ctx->channel, &ev_cq, &ev_ctx)) {
 				fprintf(stderr, "Failed to get cq_event\n");
@@ -579,51 +574,49 @@ int main(int argv, char *argc[]) {
 			do {
 				ne = ibv_poll_cq(ctx->cq, 2, wc);
 				if (ne < 0) {
-					  fprintf(stderr, "poll CQ failed %d\n", ne);
-					  return 1;
+					fprintf(stderr, "poll CQ failed %d\n", ne);
+					return 1;
 				}
 			} while (!cfg.use_event && ne < 1);
 
 			for (i = 0; i < ne; ++i) {
 				if (wc[i].status != IBV_WC_SUCCESS) {
-					  fprintf(stderr, "Failed status %d for wr_id %d\n",
+					fprintf(stderr, "Failed status %d for wr_id %d\n",
 							wc[i].status, (int) wc[i].wr_id);
-					  return 1;
+					return 1;
 				}
 
 				switch ((int) wc[i].wr_id) {
 				case STREAM_SEND_WRID:
-					  ++scnt;
-					  break;
+					++scnt;
+					break;
 
 				case STREAM_RECV_WRID:
-					  if (--routs <= 1) {
-							routs += stream_post_recv(ctx, ctx->rx_depth - routs);
-							if (routs < ctx->rx_depth) {
-								  fprintf(stderr,
-										"Couldn't post receive (%d)\n",
-										routs);
-								  return 1;
-							}
-					  }
+					if (--routs <= 1) {
+						routs += stream_post_recv(ctx, ctx->rx_depth - routs);
+						if (routs < ctx->rx_depth) {
+							fprintf(stderr, "Couldn't post receive (%d)\n",
+									routs);
+							return 1;
+						}
+					}
 
-					  ++rcnt;
-					  break;
+					++rcnt;
+					break;
 
 				default:
-					  fprintf(stderr, "Completion for unknown wr_id %d\n",
+					fprintf(stderr, "Completion for unknown wr_id %d\n",
 							(int) wc[i].wr_id);
-					  return 1;
+					return 1;
 				}
 
 				ctx->pending &= ~(int) wc[i].wr_id;
 				if (scnt < iters && !ctx->pending) {
-					  if (stream_post_send(ctx)) {
-							fprintf(stderr, "Couldn't post send\n");
-							return 1;
-					  }
-					  ctx->pending = STREAM_RECV_WRID |
-								   STREAM_SEND_WRID;
+					if (stream_post_send(ctx)) {
+						fprintf(stderr, "Couldn't post send\n");
+						return 1;
+					}
+					ctx->pending = STREAM_RECV_WRID | STREAM_SEND_WRID;
 				}
 			}
 		}
@@ -635,14 +628,14 @@ int main(int argv, char *argc[]) {
 	}
 
 	{
-		float usec = (end.tv_sec - start.tv_sec) * 1000000 +
-			  (end.tv_usec - start.tv_usec);
+		float usec = (end.tv_sec - start.tv_sec) * 1000000
+				+ (end.tv_usec - start.tv_usec);
 		long long bytes = (long long) size * iters * 2;
 
-		printf("%lld bytes in %.2f seconds = %.2f Mbit/sec\n",
-			   bytes, usec / 1000000., bytes * 8. / usec);
-		printf("%d iters in %.2f seconds = %.2f usec/iter\n",
-			   iters, usec / 1000000., usec / iters);
+		printf("%lld bytes in %.2f seconds = %.2f Mbit/sec\n", bytes,
+				usec / 1000000., bytes * 8. / usec);
+		printf("%d iters in %.2f seconds = %.2f usec/iter\n", iters,
+				usec / 1000000., usec / iters);
 	}
 
 	ibv_ack_cq_events(ctx->cq, num_cq_events);
