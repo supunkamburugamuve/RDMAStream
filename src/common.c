@@ -33,7 +33,7 @@ enum ibv_mtu stream_mtu_to_enum(int mtu) {
 /**
  * Initialize the stream context by creating the infiniband objects
  */
-static struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
+struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
 		int rx_depth, int port,
 		int use_event, int is_server) {
 	ctx->size     = size;
@@ -221,7 +221,7 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 	return 0;
 }
 
-static int stream_post_recv(struct stream_context *ctx, int n) {
+int stream_post_recv(struct stream_context *ctx, int n) {
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) ctx->buf,
 		.length = ctx->size,
@@ -242,7 +242,7 @@ static int stream_post_recv(struct stream_context *ctx, int n) {
 	return i;
 }
 
-static int stream_post_send(struct stream_context *ctx) {
+int stream_post_send(struct stream_context *ctx) {
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) ctx->buf,
 		.length = ctx->size,
