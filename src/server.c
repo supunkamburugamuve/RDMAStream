@@ -568,7 +568,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ctx = stream_init_ctx(ib_dev, cfg.size, cfg.rx_depth, cfg.ib_port, use_event, !cfg.servername);
+	ctx = stream_init_ctx(ib_dev, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername);
 	if (!ctx)
 		return 1;
 
