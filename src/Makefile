@@ -24,13 +24,13 @@ server: server.o common.o
 	$(CC) $(CFLAGS) server.o common.o -o server $(LDFLAGS) 
 
 server.o: server.c
-	${CC} -c server.c	
+	${CC} -c server.c common.c	
 	
 client: client.o common.o
 	$(CC) $(CFLAGS) client.o common.o -o client $(LDFLAGS) 
 
 client.o: client.c
-	${CC} -c client.c		
+	${CC} -c client.c common.c		
 
 common.o: common.c
 	${CC} -c common.c	
