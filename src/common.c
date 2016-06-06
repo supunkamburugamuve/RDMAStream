@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-enum ibv_mtu pp_mtu_to_enum(int mtu) {
+enum ibv_mtu stream_mtu_to_enum(int mtu) {
 	switch (mtu) {
 	case 256:  return IBV_MTU_256;
 	case 512:  return IBV_MTU_512;
@@ -15,7 +15,7 @@ enum ibv_mtu pp_mtu_to_enum(int mtu) {
 	}
 }
 
-uint16_t pp_get_local_lid(struct ibv_context *context, int port) {
+uint16_t stream_get_local_lid(struct ibv_context *context, int port) {
 	struct ibv_port_attr attr;
 
 	if (ibv_query_port(context, port, &attr))
@@ -24,7 +24,7 @@ uint16_t pp_get_local_lid(struct ibv_context *context, int port) {
 	return attr.lid;
 }
 
-int pp_get_port_info(struct ibv_context *context, int port,
+int stream_get_port_info(struct ibv_context *context, int port,
 		     struct ibv_port_attr *attr) {
 	return ibv_query_port(context, port, attr);
 }
