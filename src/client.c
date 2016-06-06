@@ -341,8 +341,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ctx = stream_init_ctx(ctx, ib_dev, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername);
-	if (!ctx)
+	if (stream_init_ctx(ctx, ib_dev, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername));
 		return 1;
 
 	routs = stream_post_recv(ctx, ctx->rx_depth);

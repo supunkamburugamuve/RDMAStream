@@ -33,7 +33,7 @@ enum ibv_mtu stream_mtu_to_enum(int mtu) {
 /**
  * Initialize the stream context by creating the infiniband objects
  */
-struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
+int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
 		int rx_depth, int port,
 		int use_event, int is_server) {
 	ctx->size     = size;
@@ -42,7 +42,7 @@ struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_de
 	ctx->buf = malloc(roundup(size, page_size));
 	if (!ctx->buf) {
 		fprintf(stderr, "Couldn't allocate work buf.\n");
-		return NULL;
+		return 1;
 	}
 
 	memset(ctx->buf, 0x7b + is_server, size);
@@ -51,14 +51,14 @@ struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_de
 	if (!ctx->context) {
 		fprintf(stderr, "Couldn't get context for %s\n",
 				ibv_get_device_name(ib_dev));
-		return NULL;
+		return 1;
 	}
 
 	if (use_event) {
 		ctx->channel = ibv_create_comp_channel(ctx->context);
 		if (!ctx->channel) {
 			fprintf(stderr, "Couldn't create completion channel\n");
-			return NULL;
+			return 1;
 		}
 	} else
 		ctx->channel = NULL;
@@ -66,20 +66,20 @@ struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_de
 	ctx->pd = ibv_alloc_pd(ctx->context);
 	if (!ctx->pd) {
 		fprintf(stderr, "Couldn't allocate PD\n");
-		return NULL;
+		return 1;
 	}
 
 	ctx->mr = ibv_reg_mr(ctx->pd, ctx->buf, size, IBV_ACCESS_LOCAL_WRITE);
 	if (!ctx->mr) {
 		fprintf(stderr, "Couldn't register MR\n");
-		return NULL;
+		return 1;
 	}
 
 	ctx->cq = ibv_create_cq(ctx->context, rx_depth + 1, NULL,
 			ctx->channel, 0);
 	if (!ctx->cq) {
 		fprintf(stderr, "Couldn't create CQ\n");
-		return NULL;
+		return 1;
 	}
 
 	{
@@ -98,7 +98,7 @@ struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_de
 		ctx->qp = ibv_create_qp(ctx->pd, &attr);
 		if (!ctx->qp)  {
 			fprintf(stderr, "Couldn't create QP\n");
-			return NULL;
+			return 1;
 		}
 	}
 
@@ -116,11 +116,11 @@ struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_de
 				IBV_QP_PORT               |
 				IBV_QP_ACCESS_FLAGS)) {
 			fprintf(stderr, "Failed to modify QP to INIT\n");
-			return NULL;
+			return 1;
 		}
 	}
 
-	return ctx;
+	return 1;
 }
 
 int stream_close_ctx(struct stream_context *ctx) {

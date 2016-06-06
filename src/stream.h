@@ -69,7 +69,7 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 /**
  * Initialize the infiniband objects
  */
-struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
+int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
 		int rx_depth, int port,
 		int use_event, int is_server);
 
