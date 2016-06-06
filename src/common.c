@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void stream_init_stream_cfg(struct stream_cfg *cfg) {
+void stream_init_cfg(struct stream_cfg *cfg) {
 	cfg->ib_devname = NULL;
 	cfg->servername = NULL;
 	cfg->port = 18515;
