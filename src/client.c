@@ -441,26 +441,20 @@ int main(int argc, char *argv[])
 	struct stream_dest     my_dest;
 	struct stream_dest    *rem_dest;
 	struct timeval           start, end;
-	char                    *ib_devname = NULL;
-	char                    *servername = NULL;
-	int                      port = 18515;
-	int                      ib_port = 1;
-	int                      size = 4096;
-	enum ibv_mtu		 mtu = IBV_MTU_1024;
-	int                      rx_depth = 500;
+
 	int                      iters = 1000;
-	int                      use_event = 0;
 	int                      routs;
 	int                      rcnt, scnt;
 	int                      num_cq_events = 0;
-	int                      sl = 0;
 	int			 gidx = -1;
 	char			 gid[33];
 
+	struct stream_cfg cfg;
 	ctx = calloc(1, sizeof *ctx);
 	if (!ctx) {
-		return NULL;
+		return 1;
 	}
+	stream_init_cfg(&cfg);
 
 	srand48(getpid() * time(NULL));
 
@@ -577,7 +571,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ctx = stream_init_ctx(ib_dev, size, rx_depth, ib_port, use_event, !servername);
+	ctx = stream_init_ctx(ctx, ib_dev, size, rx_depth, ib_port, use_event, !servername);
 	if (!ctx)
 		return 1;
 

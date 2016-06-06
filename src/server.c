@@ -440,7 +440,6 @@ int main(int argc, char *argv[])
 	struct timeval           start, end;
 
 	int                      iters = 1000;
-	int                      use_event = 0;
 	int                      routs;
 	int                      rcnt, scnt;
 	int                      num_cq_events = 0;
@@ -450,7 +449,7 @@ int main(int argc, char *argv[])
 	struct stream_cfg cfg;
 	ctx = calloc(1, sizeof *ctx);
 	if (!ctx) {
-		return NULL;
+		return 1;
 	}
 	stream_init_cfg(&cfg);
 
@@ -523,7 +522,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'e':
-			++use_event;
+			++cfg.use_event;
 			break;
 
 		case 'g':
@@ -579,7 +578,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (use_event)
+	if (cfg.use_event)
 		if (ibv_req_notify_cq(ctx->cq, 0)) {
 			fprintf(stderr, "Couldn't request CQ notification\n");
 			return 1;
@@ -645,7 +644,7 @@ int main(int argc, char *argv[])
 
 	rcnt = scnt = 0;
 	while (rcnt < iters || scnt < iters) {
-		if (use_event) {
+		if (cfg.use_event) {
 			struct ibv_cq *ev_cq;
 			void          *ev_ctx;
 
