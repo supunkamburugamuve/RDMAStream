@@ -72,8 +72,7 @@ static int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 }
 
 static struct stream_dest *stream_client_exch_dest(const char *servername, int port,
-						 const struct stream_dest *my_dest)
-{
+						 const struct stream_dest *my_dest) {
 	struct addrinfo *res, *t;
 	struct addrinfo hints = {
 		.ai_family   = AF_INET,
@@ -146,8 +145,7 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
 						 int ib_port, enum ibv_mtu mtu,
 						 int port, int sl,
 						 const struct stream_dest *my_dest,
-						 int sgid_idx)
-{
+						 int sgid_idx) {
 	struct addrinfo *res, *t;
 	struct addrinfo hints = {
 		.ai_flags    = AI_PASSIVE,
@@ -244,8 +242,7 @@ out:
 
 static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int size,
 					    int rx_depth, int port,
-					    int use_event, int is_server)
-{
+					    int use_event, int is_server) {
 	struct stream_context *ctx;
 
 	ctx = calloc(1, sizeof *ctx);
@@ -339,8 +336,7 @@ static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int siz
 	return ctx;
 }
 
-int stream_close_ctx(struct stream_context *ctx)
-{
+int stream_close_ctx(struct stream_context *ctx) {
 	if (ibv_destroy_qp(ctx->qp)) {
 		fprintf(stderr, "Couldn't destroy QP\n");
 		return 1;
@@ -379,8 +375,7 @@ int stream_close_ctx(struct stream_context *ctx)
 	return 0;
 }
 
-static int stream_post_recv(struct stream_context *ctx, int n)
-{
+static int stream_post_recv(struct stream_context *ctx, int n) {
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) ctx->buf,
 		.length = ctx->size,
@@ -401,8 +396,7 @@ static int stream_post_recv(struct stream_context *ctx, int n)
 	return i;
 }
 
-static int stream_post_send(struct stream_context *ctx)
-{
+static int stream_post_send(struct stream_context *ctx) {
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) ctx->buf,
 		.length = ctx->size,
@@ -447,21 +441,18 @@ int main(int argc, char *argv[])
 	struct stream_dest     my_dest;
 	struct stream_dest    *rem_dest;
 	struct timeval           start, end;
-	char                    *ib_devname = NULL;
-	char                    *servername = NULL;
-	int                      port = 18515;
-	int                      ib_port = 1;
-	int                      size = 4096;
-	enum ibv_mtu		 mtu = IBV_MTU_1024;
-	int                      rx_depth = 500;
+
 	int                      iters = 1000;
 	int                      use_event = 0;
 	int                      routs;
 	int                      rcnt, scnt;
 	int                      num_cq_events = 0;
-	int                      sl = 0;
 	int			 gidx = -1;
 	char			 gid[33];
+
+	struct stream_cfg cfg;
+
+	stream_init_cfg(&cfg);
 
 	srand48(getpid() * time(NULL));
 
@@ -488,39 +479,39 @@ int main(int argc, char *argv[])
 
 		switch (c) {
 		case 'p':
-			port = strtol(optarg, NULL, 0);
-			if (port < 0 || port > 65535) {
+			cfg.port = strtol(optarg, NULL, 0);
+			if (cfg.port < 0 || cfg.port > 65535) {
 				usage(argv[0]);
 				return 1;
 			}
 			break;
 
 		case 'd':
-			ib_devname = strdup(optarg);
+			cfg.ib_devname = strdup(optarg);
 			break;
 
 		case 'i':
-			ib_port = strtol(optarg, NULL, 0);
-			if (ib_port < 0) {
+			cfg.ib_port = strtol(optarg, NULL, 0);
+			if (cfg.ib_port < 0) {
 				usage(argv[0]);
 				return 1;
 			}
 			break;
 
 		case 's':
-			size = strtol(optarg, NULL, 0);
+			cfg.size = strtol(optarg, NULL, 0);
 			break;
 
 		case 'm':
-			mtu = stream_mtu_to_enum(strtol(optarg, NULL, 0));
-			if (mtu < 0) {
+			cfg.mtu = stream_mtu_to_enum(strtol(optarg, NULL, 0));
+			if (cfg.mtu < 0) {
 				usage(argv[0]);
 				return 1;
 			}
 			break;
 
 		case 'r':
-			rx_depth = strtol(optarg, NULL, 0);
+			cfg.rx_depth = strtol(optarg, NULL, 0);
 			break;
 
 		case 'n':
@@ -528,7 +519,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'l':
-			sl = strtol(optarg, NULL, 0);
+			cfg.sl = strtol(optarg, NULL, 0);
 			break;
 
 		case 'e':
@@ -546,7 +537,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (optind == argc - 1)
-		servername = strdup(argv[optind]);
+		cfg.servername = strdup(argv[optind]);
 	else if (optind < argc) {
 		usage(argv[0]);
 		return 1;
@@ -560,7 +551,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (!ib_devname) {
+	if (!cfg.ib_devname) {
 		ib_dev = *dev_list;
 		if (!ib_dev) {
 			fprintf(stderr, "No IB devices found\n");
@@ -569,16 +560,16 @@ int main(int argc, char *argv[])
 	} else {
 		int i;
 		for (i = 0; dev_list[i]; ++i)
-			if (!strcmp(ibv_get_device_name(dev_list[i]), ib_devname))
+			if (!strcmp(ibv_get_device_name(dev_list[i]), cfg.ib_devname))
 				break;
 		ib_dev = dev_list[i];
 		if (!ib_dev) {
-			fprintf(stderr, "IB device %s not found\n", ib_devname);
+			fprintf(stderr, "IB device %s not found\n", cfg.ib_devname);
 			return 1;
 		}
 	}
 
-	ctx = stream_init_ctx(ib_dev, size, rx_depth, ib_port, use_event, !servername);
+	ctx = stream_init_ctx(ib_dev, cfg.size, cfg.rx_depth, cfg.ib_port, use_event, !cfg.servername);
 	if (!ctx)
 		return 1;
 
@@ -595,7 +586,7 @@ int main(int argc, char *argv[])
 		}
 
 
-	if (stream_get_port_info(ctx->context, ib_port, &ctx->portinfo)) {
+	if (stream_get_port_info(ctx->context, cfg.ib_port, &ctx->portinfo)) {
 		fprintf(stderr, "Couldn't get port info\n");
 		return 1;
 	}
@@ -607,7 +598,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (gidx >= 0) {
-		if (ibv_query_gid(ctx->context, ib_port, gidx, &my_dest.gid)) {
+		if (ibv_query_gid(ctx->context, cfg.ib_port, gidx, &my_dest.gid)) {
 			fprintf(stderr, "Could not get local gid for gid index %d\n", gidx);
 			return 1;
 		}
@@ -621,10 +612,10 @@ int main(int argc, char *argv[])
 	       my_dest.lid, my_dest.qpn, my_dest.psn, gid);
 
 
-	if (servername)
-		rem_dest = stream_client_exch_dest(servername, port, &my_dest);
+	if (cfg.servername)
+		rem_dest = stream_client_exch_dest(cfg.servername, cfg.port, &my_dest);
 	else
-		rem_dest = stream_server_exch_dest(ctx, ib_port, mtu, port, sl, &my_dest, gidx);
+		rem_dest = stream_server_exch_dest(ctx, cfg.ib_port, cfg.mtu, cfg.port, cfg.sl, &my_dest, gidx);
 
 	if (!rem_dest)
 		return 1;
@@ -633,13 +624,13 @@ int main(int argc, char *argv[])
 	printf("  remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
 	       rem_dest->lid, rem_dest->qpn, rem_dest->psn, gid);
 
-	if (servername)
-		if (stream_connect_ctx(ctx, ib_port, my_dest.psn, mtu, sl, rem_dest, gidx))
+	if (cfg.servername)
+		if (stream_connect_ctx(ctx, cfg.ib_port, my_dest.psn, cfg.mtu, cfg.sl, rem_dest, gidx))
 			return 1;
 
 	ctx->pending = STREAM_RECV_WRID;
 
-	if (servername) {
+	if (cfg.servername) {
 		if (stream_post_send(ctx)) {
 			fprintf(stderr, "Couldn't post send\n");
 			return 1;
@@ -743,7 +734,7 @@ int main(int argc, char *argv[])
 	{
 		float usec = (end.tv_sec - start.tv_sec) * 1000000 +
 			(end.tv_usec - start.tv_usec);
-		long long bytes = (long long) size * iters * 2;
+		long long bytes = (long long) cfg.size * iters * 2;
 
 		printf("%lld bytes in %.2f seconds = %.2f Mbit/sec\n",
 		       bytes, usec / 1000000., bytes * 8. / usec);
