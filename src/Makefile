@@ -24,7 +24,7 @@ server: server.o common.o
 	$(CC) $(CFLAGS) server.o common.o -o server $(LDFLAGS) 
 
 server.o: server.c
-	${CC} -c stream_verbs.c	
+	${CC} -c server.c	
 	
 client: client.o common.o
 	$(CC) $(CFLAGS) client.o common.o -o client $(LDFLAGS) 
