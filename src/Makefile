@@ -23,13 +23,13 @@ stream.o: stream_verbs.c
 server: server.o common.o
 	$(CC) $(CFLAGS) server.o common.o -o server $(LDFLAGS) 
 
-server.o: server.c
+server.o: server.c common.c
 	${CC} -c server.c common.c	
 	
 client: client.o common.o
 	$(CC) $(CFLAGS) client.o common.o -o client $(LDFLAGS) 
 
-client.o: client.c
+client.o: client.c common.c
 	${CC} -c client.c common.c		
 
 common.o: common.c

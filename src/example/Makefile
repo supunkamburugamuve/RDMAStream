@@ -1,4 +1,4 @@
-CFLAGS=	-I../../../../sys/ofed/include -libverbs -lmlx4 -lmthca -pthread
+CFLAGS=	-I../../../../sys/ofed/include -libverbs -pthread
 
 all:	asyncwatch devinfo device_list rc_pingpong srq_pingpong uc_pingpong ud_pingpong
 
