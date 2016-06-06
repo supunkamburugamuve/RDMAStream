@@ -71,7 +71,7 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
  */
 int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
 		int rx_depth, int port,
-		int use_event, int is_server);
+		int use_event, int is_server, int page_size);
 
 int stream_post_recv(struct stream_context *ctx, int n);
 int stream_post_send(struct stream_context *ctx);

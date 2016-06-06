@@ -35,7 +35,7 @@ enum ibv_mtu stream_mtu_to_enum(int mtu) {
  */
 int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
 		int rx_depth, int port,
-		int use_event, int is_server) {
+		int use_event, int is_server, int page_size) {
 	ctx->size     = size;
 	ctx->rx_depth = rx_depth;
 
