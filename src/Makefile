@@ -14,3 +14,9 @@ rdma.o: rdma.c
 clean_rdma:
 	rm -f rdma rdma.o
 
+stream: stream_verbs.o
+	$(CC) $(CFLAGS) stream_verbs.o -o stream_verbs $(LDFLAGS) 
+
+stream.o: stream_verbs.c
+	${CC} -c stream_verbs.c
+

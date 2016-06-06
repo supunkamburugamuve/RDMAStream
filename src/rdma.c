@@ -249,8 +249,15 @@ static int tcp_server_listen(struct app_data *data){
 	TEST_N(asprintf(&service, "%d", data->port),
             "Error writing port-number to port-string");
 
-    TEST_N(n = getaddrinfo(NULL, service, &hints, &res),
+        printf("port service:%s***************\n", service);
+        printf("Get address info\n");
+        TEST_N(n = getaddrinfo(NULL, service, &hints, &res),
             "getaddrinfo threw error");
+        if (n < 0) {
+                fprintf(stderr, "%s for port %d\n", gai_strerror(n), data->port);
+                return -1;
+        }
+
 
 	TEST_N(sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol),
                 "Could not create server socket");
