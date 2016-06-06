@@ -181,47 +181,6 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
 	return rem_dest;
 }
 
-
-
-static int stream_post_recv(struct stream_context *ctx, int n) {
-	struct ibv_sge list = {
-			.addr	= (uintptr_t) ctx->buf,
-			.length = ctx->size,
-			.lkey	= ctx->mr->lkey
-	};
-	struct ibv_recv_wr wr = {
-			.wr_id	    = STREAM_RECV_WRID,
-			.sg_list    = &list,
-			.num_sge    = 1,
-	};
-	struct ibv_recv_wr *bad_wr;
-	int i;
-
-	for (i = 0; i < n; ++i)
-		if (ibv_post_recv(ctx->qp, &wr, &bad_wr))
-			break;
-
-	return i;
-}
-
-static int stream_post_send(struct stream_context *ctx) {
-	struct ibv_sge list = {
-			.addr	= (uintptr_t) ctx->buf,
-			.length = ctx->size,
-			.lkey	= ctx->mr->lkey
-	};
-	struct ibv_send_wr wr = {
-			.wr_id	    = STREAM_SEND_WRID,
-			.sg_list    = &list,
-			.num_sge    = 1,
-			.opcode     = IBV_WR_SEND,
-			.send_flags = IBV_SEND_SIGNALED,
-	};
-	struct ibv_send_wr *bad_wr;
-
-	return ibv_post_send(ctx->qp, &wr, &bad_wr);
-}
-
 static void usage(const char *argv0)
 {
 	printf("Usage:\n");
