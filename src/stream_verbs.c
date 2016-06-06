@@ -341,10 +341,11 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
                                      const struct stream_dest *my_dest)
 {
 	struct addrinfo *res, *t;
-	struct addrinfo hints;
-	hints.ai_flags = AI_PASSIVE;
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
+	struct addrinfo hints = {
+			.ai_flags		= AI_PASSIVE,
+			.ai_family		= AF_UNSPEC,
+			.ai_socktype	= SOCK_STREAM
+		};
 
 	char *service;
 	char msg[sizeof "0000:000000:000000"];
