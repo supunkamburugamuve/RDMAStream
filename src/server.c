@@ -339,6 +339,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (stream_init_ctx(ctx, ib_dev, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername, page_size)) {
+		fprintf(stderr, "Failed to initialize context\n");
 		return 1;
 	}
 
