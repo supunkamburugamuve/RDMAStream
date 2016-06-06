@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
+/**
+ * Initialize the configuration to default values
+ */
 void stream_init_cfg(struct stream_cfg *cfg) {
 	cfg->ib_devname = NULL;
 	cfg->servername = NULL;

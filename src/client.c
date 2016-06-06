@@ -242,16 +242,10 @@ out:
 
 #include <sys/param.h>
 
-static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int size,
+static struct stream_context *stream_init_ctx(struct stream_context *ctx,
+						struct ibv_device *ib_dev, int size,
 					    int rx_depth, int port,
-					    int use_event, int is_server)
-{
-	struct stream_context *ctx;
-
-	ctx = calloc(1, sizeof *ctx);
-	if (!ctx)
-		return NULL;
-
+					    int use_event, int is_server) {
 	ctx->size     = size;
 	ctx->rx_depth = rx_depth;
 
@@ -462,6 +456,11 @@ int main(int argc, char *argv[])
 	int                      sl = 0;
 	int			 gidx = -1;
 	char			 gid[33];
+
+	ctx = calloc(1, sizeof *ctx);
+	if (!ctx) {
+		return NULL;
+	}
 
 	srand48(getpid() * time(NULL));
 

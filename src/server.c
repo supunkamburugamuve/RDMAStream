@@ -10,27 +10,28 @@
 #include <getopt.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <sys/param.h>
 
 #include "stream.h"
 
 static int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
-			  enum ibv_mtu mtu, int sl,
-			  struct stream_dest *dest, int sgid_idx)
-{
+		enum ibv_mtu mtu, int sl,
+		struct stream_dest *dest, int sgid_idx) {
+	int ret;
 	struct ibv_qp_attr attr = {
-		.qp_state		= IBV_QPS_RTR,
-		.path_mtu		= mtu,
-		.dest_qp_num		= dest->qpn,
-		.rq_psn			= dest->psn,
-		.max_dest_rd_atomic	= 1,
-		.min_rnr_timer		= 12,
-		.ah_attr		= {
-			.is_global	= 0,
-			.dlid		= dest->lid,
-			.sl		= sl,
-			.src_path_bits	= 0,
-			.port_num	= port
-		}
+			.qp_state		= IBV_QPS_RTR,
+			.path_mtu		= mtu,
+			.dest_qp_num	= dest->qpn,
+			.rq_psn			= dest->psn,
+			.max_dest_rd_atomic	= 1,
+			.min_rnr_timer		= 12,
+			.ah_attr		= {
+					.is_global	= 0,
+					.dlid		= dest->lid,
+					.sl		= sl,
+					.src_path_bits	= 0,
+					.port_num	= port
+			}
 	};
 
 	if (dest->gid.global.interface_id) {
@@ -39,16 +40,17 @@ static int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 		attr.ah_attr.grh.dgid = dest->gid;
 		attr.ah_attr.grh.sgid_index = sgid_idx;
 	}
-	if (ibv_modify_qp(ctx->qp, &attr,
-			  IBV_QP_STATE              |
-			  IBV_QP_AV                 |
-			  IBV_QP_PATH_MTU           |
-			  IBV_QP_DEST_QPN           |
-			  IBV_QP_RQ_PSN             |
-			  IBV_QP_MAX_DEST_RD_ATOMIC |
-			  IBV_QP_MIN_RNR_TIMER)) {
+
+	if ((ret = ibv_modify_qp(ctx->qp, &attr,
+			IBV_QP_STATE              |
+			IBV_QP_AV                 |
+			IBV_QP_PATH_MTU           |
+			IBV_QP_DEST_QPN           |
+			IBV_QP_RQ_PSN             |
+			IBV_QP_MAX_DEST_RD_ATOMIC |
+			IBV_QP_MIN_RNR_TIMER))) {
 		fprintf(stderr, "Failed to modify QP to RTR\n");
-		return 1;
+		return ret;
 	}
 
 	attr.qp_state	    = IBV_QPS_RTS;
@@ -57,26 +59,26 @@ static int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 	attr.rnr_retry	    = 7;
 	attr.sq_psn	    = my_psn;
 	attr.max_rd_atomic  = 1;
-	if (ibv_modify_qp(ctx->qp, &attr,
-			  IBV_QP_STATE              |
-			  IBV_QP_TIMEOUT            |
-			  IBV_QP_RETRY_CNT          |
-			  IBV_QP_RNR_RETRY          |
-			  IBV_QP_SQ_PSN             |
-			  IBV_QP_MAX_QP_RD_ATOMIC)) {
+	if ((ret = ibv_modify_qp(ctx->qp, &attr,
+			IBV_QP_STATE              |
+			IBV_QP_TIMEOUT            |
+			IBV_QP_RETRY_CNT          |
+			IBV_QP_RNR_RETRY          |
+			IBV_QP_SQ_PSN             |
+			IBV_QP_MAX_QP_RD_ATOMIC))) {
 		fprintf(stderr, "Failed to modify QP to RTS\n");
-		return 1;
+		return ret;
 	}
 
 	return 0;
 }
 
 static struct stream_dest *stream_client_exch_dest(const char *servername, int port,
-						 const struct stream_dest *my_dest) {
+		const struct stream_dest *my_dest) {
 	struct addrinfo *res, *t;
 	struct addrinfo hints = {
-		.ai_family   = AF_INET,
-		.ai_socktype = SOCK_STREAM
+			.ai_family   = AF_INET,
+			.ai_socktype = SOCK_STREAM
 	};
 	char *service;
 	char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
@@ -136,21 +138,21 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
 	sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
 	wire_gid_to_gid(gid, &rem_dest->gid);
 
-out:
+	out:
 	close(sockfd);
 	return rem_dest;
 }
 
 static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
-						 int ib_port, enum ibv_mtu mtu,
-						 int port, int sl,
-						 const struct stream_dest *my_dest,
-						 int sgid_idx) {
+		int ib_port, enum ibv_mtu mtu,
+		int port, int sl,
+		const struct stream_dest *my_dest,
+		int sgid_idx) {
 	struct addrinfo *res, *t;
 	struct addrinfo hints = {
-		.ai_flags    = AI_PASSIVE,
-		.ai_family   = AF_INET,
-		.ai_socktype = SOCK_STREAM
+			.ai_flags    = AI_PASSIVE,
+			.ai_family   = AF_INET,
+			.ai_socktype = SOCK_STREAM
 	};
 	char *service;
 	char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
@@ -233,22 +235,17 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
 
 	read(connfd, msg, sizeof msg);
 
-out:
+	out:
 	close(connfd);
 	return rem_dest;
 }
 
-#include <sys/param.h>
-
-static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int size,
-					    int rx_depth, int port,
-					    int use_event, int is_server) {
-	struct stream_context *ctx;
-
-	ctx = calloc(1, sizeof *ctx);
-	if (!ctx)
-		return NULL;
-
+/**
+ * Initialize the stream context by creating the infiniband objects
+ */
+static struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
+		int rx_depth, int port,
+		int use_event, int is_server) {
 	ctx->size     = size;
 	ctx->rx_depth = rx_depth;
 
@@ -263,7 +260,7 @@ static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int siz
 	ctx->context = ibv_open_device(ib_dev);
 	if (!ctx->context) {
 		fprintf(stderr, "Couldn't get context for %s\n",
-			ibv_get_device_name(ib_dev));
+				ibv_get_device_name(ib_dev));
 		return NULL;
 	}
 
@@ -289,7 +286,7 @@ static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int siz
 	}
 
 	ctx->cq = ibv_create_cq(ctx->context, rx_depth + 1, NULL,
-				ctx->channel, 0);
+			ctx->channel, 0);
 	if (!ctx->cq) {
 		fprintf(stderr, "Couldn't create CQ\n");
 		return NULL;
@@ -297,15 +294,15 @@ static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int siz
 
 	{
 		struct ibv_qp_init_attr attr = {
-			.send_cq = ctx->cq,
-			.recv_cq = ctx->cq,
-			.cap     = {
-				.max_send_wr  = 1,
-				.max_recv_wr  = rx_depth,
-				.max_send_sge = 1,
-				.max_recv_sge = 1
-			},
-			.qp_type = IBV_QPT_RC
+				.send_cq = ctx->cq,
+				.recv_cq = ctx->cq,
+				.cap     = {
+						.max_send_wr  = 1,
+						.max_recv_wr  = rx_depth,
+						.max_send_sge = 1,
+						.max_recv_sge = 1
+				},
+				.qp_type = IBV_QPT_RC
 		};
 
 		ctx->qp = ibv_create_qp(ctx->pd, &attr);
@@ -317,17 +314,17 @@ static struct stream_context *stream_init_ctx(struct ibv_device *ib_dev, int siz
 
 	{
 		struct ibv_qp_attr attr = {
-			.qp_state        = IBV_QPS_INIT,
-			.pkey_index      = 0,
-			.port_num        = port,
-			.qp_access_flags = 0
+				.qp_state        = IBV_QPS_INIT,
+				.pkey_index      = 0,
+				.port_num        = port,
+				.qp_access_flags = 0
 		};
 
 		if (ibv_modify_qp(ctx->qp, &attr,
-				  IBV_QP_STATE              |
-				  IBV_QP_PKEY_INDEX         |
-				  IBV_QP_PORT               |
-				  IBV_QP_ACCESS_FLAGS)) {
+				IBV_QP_STATE              |
+				IBV_QP_PKEY_INDEX         |
+				IBV_QP_PORT               |
+				IBV_QP_ACCESS_FLAGS)) {
 			fprintf(stderr, "Failed to modify QP to INIT\n");
 			return NULL;
 		}
@@ -377,14 +374,14 @@ int stream_close_ctx(struct stream_context *ctx) {
 
 static int stream_post_recv(struct stream_context *ctx, int n) {
 	struct ibv_sge list = {
-		.addr	= (uintptr_t) ctx->buf,
-		.length = ctx->size,
-		.lkey	= ctx->mr->lkey
+			.addr	= (uintptr_t) ctx->buf,
+			.length = ctx->size,
+			.lkey	= ctx->mr->lkey
 	};
 	struct ibv_recv_wr wr = {
-		.wr_id	    = STREAM_RECV_WRID,
-		.sg_list    = &list,
-		.num_sge    = 1,
+			.wr_id	    = STREAM_RECV_WRID,
+			.sg_list    = &list,
+			.num_sge    = 1,
 	};
 	struct ibv_recv_wr *bad_wr;
 	int i;
@@ -398,16 +395,16 @@ static int stream_post_recv(struct stream_context *ctx, int n) {
 
 static int stream_post_send(struct stream_context *ctx) {
 	struct ibv_sge list = {
-		.addr	= (uintptr_t) ctx->buf,
-		.length = ctx->size,
-		.lkey	= ctx->mr->lkey
+			.addr	= (uintptr_t) ctx->buf,
+			.length = ctx->size,
+			.lkey	= ctx->mr->lkey
 	};
 	struct ibv_send_wr wr = {
-		.wr_id	    = STREAM_SEND_WRID,
-		.sg_list    = &list,
-		.num_sge    = 1,
-		.opcode     = IBV_WR_SEND,
-		.send_flags = IBV_SEND_SIGNALED,
+			.wr_id	    = STREAM_SEND_WRID,
+			.sg_list    = &list,
+			.num_sge    = 1,
+			.opcode     = IBV_WR_SEND,
+			.send_flags = IBV_SEND_SIGNALED,
 	};
 	struct ibv_send_wr *bad_wr;
 
@@ -451,7 +448,10 @@ int main(int argc, char *argv[])
 	char			 gid[33];
 
 	struct stream_cfg cfg;
-
+	ctx = calloc(1, sizeof *ctx);
+	if (!ctx) {
+		return NULL;
+	}
 	stream_init_cfg(&cfg);
 
 	srand48(getpid() * time(NULL));
@@ -460,17 +460,17 @@ int main(int argc, char *argv[])
 		int c;
 
 		static struct option long_options[] = {
-			{ .name = "port",     .has_arg = 1, .val = 'p' },
-			{ .name = "ib-dev",   .has_arg = 1, .val = 'd' },
-			{ .name = "ib-port",  .has_arg = 1, .val = 'i' },
-			{ .name = "size",     .has_arg = 1, .val = 's' },
-			{ .name = "mtu",      .has_arg = 1, .val = 'm' },
-			{ .name = "rx-depth", .has_arg = 1, .val = 'r' },
-			{ .name = "iters",    .has_arg = 1, .val = 'n' },
-			{ .name = "sl",       .has_arg = 1, .val = 'l' },
-			{ .name = "events",   .has_arg = 0, .val = 'e' },
-			{ .name = "gid-idx",  .has_arg = 1, .val = 'g' },
-			{ 0 }
+				{ .name = "port",     .has_arg = 1, .val = 'p' },
+				{ .name = "ib-dev",   .has_arg = 1, .val = 'd' },
+				{ .name = "ib-port",  .has_arg = 1, .val = 'i' },
+				{ .name = "size",     .has_arg = 1, .val = 's' },
+				{ .name = "mtu",      .has_arg = 1, .val = 'm' },
+				{ .name = "rx-depth", .has_arg = 1, .val = 'r' },
+				{ .name = "iters",    .has_arg = 1, .val = 'n' },
+				{ .name = "sl",       .has_arg = 1, .val = 'l' },
+				{ .name = "events",   .has_arg = 0, .val = 'e' },
+				{ .name = "gid-idx",  .has_arg = 1, .val = 'g' },
+				{ 0 }
 		};
 
 		c = getopt_long(argc, argv, "p:d:i:s:m:r:n:l:eg:", long_options, NULL);
@@ -609,7 +609,7 @@ int main(int argc, char *argv[])
 	my_dest.psn = lrand48() & 0xffffff;
 	inet_ntop(AF_INET6, &my_dest.gid, gid, sizeof gid);
 	printf("  local address:  LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
-	       my_dest.lid, my_dest.qpn, my_dest.psn, gid);
+			my_dest.lid, my_dest.qpn, my_dest.psn, gid);
 
 
 	if (cfg.servername)
@@ -622,7 +622,7 @@ int main(int argc, char *argv[])
 
 	inet_ntop(AF_INET6, &rem_dest->gid, gid, sizeof gid);
 	printf("  remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
-	       rem_dest->lid, rem_dest->qpn, rem_dest->psn, gid);
+			rem_dest->lid, rem_dest->qpn, rem_dest->psn, gid);
 
 	if (cfg.servername)
 		if (stream_connect_ctx(ctx, cfg.ib_port, my_dest.psn, cfg.mtu, cfg.sl, rem_dest, gidx))
@@ -683,8 +683,8 @@ int main(int argc, char *argv[])
 			for (i = 0; i < ne; ++i) {
 				if (wc[i].status != IBV_WC_SUCCESS) {
 					fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-						ibv_wc_status_str(wc[i].status),
-						wc[i].status, (int) wc[i].wr_id);
+							ibv_wc_status_str(wc[i].status),
+							wc[i].status, (int) wc[i].wr_id);
 					return 1;
 				}
 
@@ -698,8 +698,8 @@ int main(int argc, char *argv[])
 						routs += stream_post_recv(ctx, ctx->rx_depth - routs);
 						if (routs < ctx->rx_depth) {
 							fprintf(stderr,
-								"Couldn't post receive (%d)\n",
-								routs);
+									"Couldn't post receive (%d)\n",
+									routs);
 							return 1;
 						}
 					}
@@ -709,7 +709,7 @@ int main(int argc, char *argv[])
 
 				default:
 					fprintf(stderr, "Completion for unknown wr_id %d\n",
-						(int) wc[i].wr_id);
+							(int) wc[i].wr_id);
 					return 1;
 				}
 
@@ -720,7 +720,7 @@ int main(int argc, char *argv[])
 						return 1;
 					}
 					ctx->pending = STREAM_RECV_WRID |
-						       STREAM_SEND_WRID;
+							STREAM_SEND_WRID;
 				}
 			}
 		}
@@ -733,13 +733,13 @@ int main(int argc, char *argv[])
 
 	{
 		float usec = (end.tv_sec - start.tv_sec) * 1000000 +
-			(end.tv_usec - start.tv_usec);
+				(end.tv_usec - start.tv_usec);
 		long long bytes = (long long) cfg.size * iters * 2;
 
 		printf("%lld bytes in %.2f seconds = %.2f Mbit/sec\n",
-		       bytes, usec / 1000000., bytes * 8. / usec);
+				bytes, usec / 1000000., bytes * 8. / usec);
 		printf("%d iters in %.2f seconds = %.2f usec/iter\n",
-		       iters, usec / 1000000., usec / iters);
+				iters, usec / 1000000., usec / iters);
 	}
 
 	ibv_ack_cq_events(ctx->cq, num_cq_events);

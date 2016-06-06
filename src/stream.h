@@ -29,6 +29,9 @@ struct stream_context {
 	struct ibv_port_attr portinfo;
 };
 
+/**
+ * An RDMA destination. This information is needed to connect a Queue Pair.
+ */
 struct stream_dest {
 	int lid;
 	int qpn;
@@ -36,16 +39,19 @@ struct stream_dest {
 	union ibv_gid gid;
 };
 
+/**
+ * Stream configurations.
+ */
 struct stream_cfg {
-	char *ib_devname;
-	char *servername;
-	int port;
-	int ib_port;
-	int size;
+	char *ib_devname;     // device name, can be NULL and we use the first available device
+	char *servername;     // server IP address to connect to
+	int port;             // TCP port of the server
+	int ib_port;          // ib port
+	int size;             // size of the buffer
 	enum ibv_mtu mtu;
-	int rx_depth;            // receive depth
+	int rx_depth;         // receive depth
 	int use_event;
-	int sl;              // service level value
+	int sl;               // service level value
 };
 
 void stream_init_cfg(struct stream_cfg *cfg);
