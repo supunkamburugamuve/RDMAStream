@@ -120,7 +120,7 @@ int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int s
 		}
 	}
 
-	return 1;
+	return 0;
 }
 
 int stream_close_ctx(struct stream_context *ctx) {
