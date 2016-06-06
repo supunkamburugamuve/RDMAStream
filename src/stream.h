@@ -45,7 +45,7 @@ struct stream_cfg {
 	enum ibv_mtu mtu;
 	int rx_depth;            // receive depth
 	int use_event;
-	int sl = 0;              // service level value
+	int sl;              // service level value
 };
 
 void stream_init_cfg(struct stream_cfg *cfg);
