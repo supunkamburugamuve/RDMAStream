@@ -736,7 +736,7 @@ int main(int argc, char *argv[])
 	{
 		float usec = (end.tv_sec - start.tv_sec) * 1000000 +
 			(end.tv_usec - start.tv_usec);
-		long long bytes = (long long) size * iters * 2;
+		long long bytes = (long long) cfg.size * iters * 2;
 
 		printf("%lld bytes in %.2f seconds = %.2f Mbit/sec\n",
 		       bytes, usec / 1000000., bytes * 8. / usec);
