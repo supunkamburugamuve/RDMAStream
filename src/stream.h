@@ -55,6 +55,11 @@ struct stream_cfg {
 };
 
 void stream_init_cfg(struct stream_cfg *cfg);
+int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
+		enum ibv_mtu mtu, int sl,
+		struct stream_dest *dest, int sgid_idx);
+
+
 enum ibv_mtu stream_mtu_to_enum(int mtu);
 uint16_t stream_get_local_lid(struct ibv_context *context, int port);
 int stream_get_port_info(struct ibv_context *context, int port,
