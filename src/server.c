@@ -568,7 +568,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	ctx = stream_init_ctx(ib_dev, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername);
+	ctx = stream_init_ctx(ctx, ib_dev, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername);
 	if (!ctx)
 		return 1;
 
@@ -677,7 +677,7 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 
-			} while (!use_event && ne < 1);
+			} while (!cfg.use_event && ne < 1);
 
 			for (i = 0; i < ne; ++i) {
 				if (wc[i].status != IBV_WC_SUCCESS) {
