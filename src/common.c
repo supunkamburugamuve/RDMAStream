@@ -30,6 +30,138 @@ enum ibv_mtu stream_mtu_to_enum(int mtu) {
 	}
 }
 
+/**
+ * Initialize the stream context by creating the infiniband objects
+ */
+static struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
+		int rx_depth, int port,
+		int use_event, int is_server) {
+	ctx->size     = size;
+	ctx->rx_depth = rx_depth;
+
+	ctx->buf = malloc(roundup(size, page_size));
+	if (!ctx->buf) {
+		fprintf(stderr, "Couldn't allocate work buf.\n");
+		return NULL;
+	}
+
+	memset(ctx->buf, 0x7b + is_server, size);
+
+	ctx->context = ibv_open_device(ib_dev);
+	if (!ctx->context) {
+		fprintf(stderr, "Couldn't get context for %s\n",
+				ibv_get_device_name(ib_dev));
+		return NULL;
+	}
+
+	if (use_event) {
+		ctx->channel = ibv_create_comp_channel(ctx->context);
+		if (!ctx->channel) {
+			fprintf(stderr, "Couldn't create completion channel\n");
+			return NULL;
+		}
+	} else
+		ctx->channel = NULL;
+
+	ctx->pd = ibv_alloc_pd(ctx->context);
+	if (!ctx->pd) {
+		fprintf(stderr, "Couldn't allocate PD\n");
+		return NULL;
+	}
+
+	ctx->mr = ibv_reg_mr(ctx->pd, ctx->buf, size, IBV_ACCESS_LOCAL_WRITE);
+	if (!ctx->mr) {
+		fprintf(stderr, "Couldn't register MR\n");
+		return NULL;
+	}
+
+	ctx->cq = ibv_create_cq(ctx->context, rx_depth + 1, NULL,
+			ctx->channel, 0);
+	if (!ctx->cq) {
+		fprintf(stderr, "Couldn't create CQ\n");
+		return NULL;
+	}
+
+	{
+		struct ibv_qp_init_attr attr = {
+				.send_cq = ctx->cq,
+				.recv_cq = ctx->cq,
+				.cap     = {
+						.max_send_wr  = 1,
+						.max_recv_wr  = rx_depth,
+						.max_send_sge = 1,
+						.max_recv_sge = 1
+				},
+				.qp_type = IBV_QPT_RC
+		};
+
+		ctx->qp = ibv_create_qp(ctx->pd, &attr);
+		if (!ctx->qp)  {
+			fprintf(stderr, "Couldn't create QP\n");
+			return NULL;
+		}
+	}
+
+	{
+		struct ibv_qp_attr attr = {
+				.qp_state        = IBV_QPS_INIT,
+				.pkey_index      = 0,
+				.port_num        = port,
+				.qp_access_flags = 0
+		};
+
+		if (ibv_modify_qp(ctx->qp, &attr,
+				IBV_QP_STATE              |
+				IBV_QP_PKEY_INDEX         |
+				IBV_QP_PORT               |
+				IBV_QP_ACCESS_FLAGS)) {
+			fprintf(stderr, "Failed to modify QP to INIT\n");
+			return NULL;
+		}
+	}
+
+	return ctx;
+}
+
+int stream_close_ctx(struct stream_context *ctx) {
+	if (ibv_destroy_qp(ctx->qp)) {
+		fprintf(stderr, "Couldn't destroy QP\n");
+		return 1;
+	}
+
+	if (ibv_destroy_cq(ctx->cq)) {
+		fprintf(stderr, "Couldn't destroy CQ\n");
+		return 1;
+	}
+
+	if (ibv_dereg_mr(ctx->mr)) {
+		fprintf(stderr, "Couldn't deregister MR\n");
+		return 1;
+	}
+
+	if (ibv_dealloc_pd(ctx->pd)) {
+		fprintf(stderr, "Couldn't deallocate PD\n");
+		return 1;
+	}
+
+	if (ctx->channel) {
+		if (ibv_destroy_comp_channel(ctx->channel)) {
+			fprintf(stderr, "Couldn't destroy completion channel\n");
+			return 1;
+		}
+	}
+
+	if (ibv_close_device(ctx->context)) {
+		fprintf(stderr, "Couldn't release context\n");
+		return 1;
+	}
+
+	free(ctx->buf);
+	free(ctx);
+
+	return 0;
+}
+
 int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 		enum ibv_mtu mtu, int sl,
 		struct stream_dest *dest, int sgid_idx) {
@@ -88,6 +220,46 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 
 	return 0;
 }
+
+static int stream_post_recv(struct stream_context *ctx, int n) {
+	struct ibv_sge list = {
+		.addr	= (uintptr_t) ctx->buf,
+		.length = ctx->size,
+		.lkey	= ctx->mr->lkey
+	};
+	struct ibv_recv_wr wr = {
+		.wr_id	    = STREAM_RECV_WRID,
+		.sg_list    = &list,
+		.num_sge    = 1,
+	};
+	struct ibv_recv_wr *bad_wr;
+	int i;
+
+	for (i = 0; i < n; ++i)
+		if (ibv_post_recv(ctx->qp, &wr, &bad_wr))
+			break;
+
+	return i;
+}
+
+static int stream_post_send(struct stream_context *ctx) {
+	struct ibv_sge list = {
+		.addr	= (uintptr_t) ctx->buf,
+		.length = ctx->size,
+		.lkey	= ctx->mr->lkey
+	};
+	struct ibv_send_wr wr = {
+		.wr_id	    = STREAM_SEND_WRID,
+		.sg_list    = &list,
+		.num_sge    = 1,
+		.opcode     = IBV_WR_SEND,
+		.send_flags = IBV_SEND_SIGNALED,
+	};
+	struct ibv_send_wr *bad_wr;
+
+	return ibv_post_send(ctx->qp, &wr, &bad_wr);
+}
+
 
 uint16_t stream_get_local_lid(struct ibv_context *context, int port) {
 	struct ibv_port_attr attr;

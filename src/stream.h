@@ -54,11 +54,29 @@ struct stream_cfg {
 	int sl;               // service level value
 };
 
+/**
+ * Initialize the configuration to default values
+ */
 void stream_init_cfg(struct stream_cfg *cfg);
+
+/**
+ * Connect the qps
+ */
 int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 		enum ibv_mtu mtu, int sl,
 		struct stream_dest *dest, int sgid_idx);
 
+/**
+ * Initialize the infiniband objects
+ */
+struct stream_context *stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
+		int rx_depth, int port,
+		int use_event, int is_server);
+
+int stream_post_recv(struct stream_context *ctx, int n);
+int stream_post_send(struct stream_context *ctx);
+
+int stream_close_ctx(struct stream_context *ctx);
 
 enum ibv_mtu stream_mtu_to_enum(int mtu);
 uint16_t stream_get_local_lid(struct ibv_context *context, int port);
