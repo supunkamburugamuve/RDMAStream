@@ -15,8 +15,7 @@
 #include "stream.h"
 
 static struct stream_dest *stream_client_exch_dest(const char *servername, int port,
-						 const struct stream_dest *my_dest)
-{
+						 const struct stream_dest *my_dest) {
 	struct addrinfo *res, *t;
 	struct addrinfo hints = {
 		.ai_family   = AF_INET,
@@ -89,8 +88,7 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
 						 int ib_port, enum ibv_mtu mtu,
 						 int port, int sl,
 						 const struct stream_dest *my_dest,
-						 int sgid_idx)
-{
+						 int sgid_idx) {
 	struct addrinfo *res, *t;
 	struct addrinfo hints = {
 		.ai_flags    = AI_PASSIVE,
@@ -184,8 +182,7 @@ out:
 }
 
 
-static void usage(const char *argv0)
-{
+static void usage(const char *argv0) {
 	printf("Usage:\n");
 	printf("  %s            start a server and wait for connection\n", argv0);
 	printf("  %s <host>     connect to server at <host>\n", argv0);
@@ -203,21 +200,20 @@ static void usage(const char *argv0)
 	printf("  -g, --gid-idx=<gid index> local port gid index\n");
 }
 
-int main(int argc, char *argv[])
-{
-	struct ibv_device      **dev_list;
-	struct ibv_device	*ib_dev;
+int main(int argc, char *argv[]) {
+	struct ibv_device **dev_list;
+	struct ibv_device *ib_dev;
 	struct stream_context *ctx;
-	struct stream_dest     my_dest;
-	struct stream_dest    *rem_dest;
-	struct timeval           start, end;
+	struct stream_dest my_dest;
+	struct stream_dest *rem_dest;
+	struct timeval start, end;
 
-	int                      iters = 1000;
-	int                      routs;
-	int                      rcnt, scnt;
-	int                      num_cq_events = 0;
-	int			 gidx = -1;
-	char			 gid[33];
+	int iters = 1000;
+	int routs;
+	int rcnt, scnt;
+	int num_cq_events = 0;
+	int	gidx = -1;
+	char gid[33];
 
 	struct stream_cfg cfg;
 	ctx = calloc(1, sizeof *ctx);
@@ -232,17 +228,17 @@ int main(int argc, char *argv[])
 		int c;
 
 		static struct option long_options[] = {
-			{ .name = "port",     .has_arg = 1, .val = 'p' },
-			{ .name = "ib-dev",   .has_arg = 1, .val = 'd' },
-			{ .name = "ib-port",  .has_arg = 1, .val = 'i' },
-			{ .name = "size",     .has_arg = 1, .val = 's' },
-			{ .name = "mtu",      .has_arg = 1, .val = 'm' },
-			{ .name = "rx-depth", .has_arg = 1, .val = 'r' },
-			{ .name = "iters",    .has_arg = 1, .val = 'n' },
-			{ .name = "sl",       .has_arg = 1, .val = 'l' },
-			{ .name = "events",   .has_arg = 0, .val = 'e' },
-			{ .name = "gid-idx",  .has_arg = 1, .val = 'g' },
-			{ 0 }
+				{ .name = "port",     .has_arg = 1, .val = 'p' },
+				{ .name = "ib-dev",   .has_arg = 1, .val = 'd' },
+				{ .name = "ib-port",  .has_arg = 1, .val = 'i' },
+				{ .name = "size",     .has_arg = 1, .val = 's' },
+				{ .name = "mtu",      .has_arg = 1, .val = 'm' },
+				{ .name = "rx-depth", .has_arg = 1, .val = 'r' },
+				{ .name = "iters",    .has_arg = 1, .val = 'n' },
+				{ .name = "sl",       .has_arg = 1, .val = 'l' },
+				{ .name = "events",   .has_arg = 0, .val = 'e' },
+				{ .name = "gid-idx",  .has_arg = 1, .val = 'g' },
+				{ 0 }
 		};
 
 		c = getopt_long(argc, argv, "p:d:i:s:m:r:n:l:eg:", long_options, NULL);
@@ -352,12 +348,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (cfg.use_event)
+	if (cfg.use_event) {
 		if (ibv_req_notify_cq(ctx->cq, 0)) {
 			fprintf(stderr, "Couldn't request CQ notification\n");
 			return 1;
 		}
-
+	}
 
 	if (stream_get_port_info(ctx->context, cfg.ib_port, &ctx->portinfo)) {
 		fprintf(stderr, "Couldn't get port info\n");
@@ -375,14 +371,15 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Could not get local gid for gid index %d\n", gidx);
 			return 1;
 		}
-	} else
+	} else {
 		memset(&my_dest.gid, 0, sizeof my_dest.gid);
+	}
 
 	my_dest.qpn = ctx->qp->qp_num;
 	my_dest.psn = lrand48() & 0xffffff;
 	inet_ntop(AF_INET6, &my_dest.gid, gid, sizeof gid);
 	printf("  local address:  LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
-	       my_dest.lid, my_dest.qpn, my_dest.psn, gid);
+			my_dest.lid, my_dest.qpn, my_dest.psn, gid);
 
 
 	if (cfg.servername)
@@ -390,12 +387,13 @@ int main(int argc, char *argv[])
 	else
 		rem_dest = stream_server_exch_dest(ctx, cfg.ib_port, cfg.mtu, cfg.port, cfg.sl, &my_dest, gidx);
 
-	if (!rem_dest)
+	if (!rem_dest) {
 		return 1;
+	}
 
 	inet_ntop(AF_INET6, &rem_dest->gid, gid, sizeof gid);
 	printf("  remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
-	       rem_dest->lid, rem_dest->qpn, rem_dest->psn, gid);
+			rem_dest->lid, rem_dest->qpn, rem_dest->psn, gid);
 
 	if (cfg.servername)
 		if (stream_connect_ctx(ctx, cfg.ib_port, my_dest.psn, cfg.mtu, cfg.sl, rem_dest, gidx))
@@ -456,8 +454,8 @@ int main(int argc, char *argv[])
 			for (i = 0; i < ne; ++i) {
 				if (wc[i].status != IBV_WC_SUCCESS) {
 					fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
-						ibv_wc_status_str(wc[i].status),
-						wc[i].status, (int) wc[i].wr_id);
+							ibv_wc_status_str(wc[i].status),
+							wc[i].status, (int) wc[i].wr_id);
 					return 1;
 				}
 
@@ -471,8 +469,8 @@ int main(int argc, char *argv[])
 						routs += stream_post_recv(ctx, ctx->rx_depth - routs);
 						if (routs < ctx->rx_depth) {
 							fprintf(stderr,
-								"Couldn't post receive (%d)\n",
-								routs);
+									"Couldn't post receive (%d)\n",
+									routs);
 							return 1;
 						}
 					}
@@ -482,7 +480,7 @@ int main(int argc, char *argv[])
 
 				default:
 					fprintf(stderr, "Completion for unknown wr_id %d\n",
-						(int) wc[i].wr_id);
+							(int) wc[i].wr_id);
 					return 1;
 				}
 
@@ -493,7 +491,7 @@ int main(int argc, char *argv[])
 						return 1;
 					}
 					ctx->pending = STREAM_RECV_WRID |
-						       STREAM_SEND_WRID;
+							STREAM_SEND_WRID;
 				}
 			}
 		}
@@ -506,13 +504,13 @@ int main(int argc, char *argv[])
 
 	{
 		float usec = (end.tv_sec - start.tv_sec) * 1000000 +
-			(end.tv_usec - start.tv_usec);
+				(end.tv_usec - start.tv_usec);
 		long long bytes = (long long) cfg.size * iters * 2;
 
 		printf("%lld bytes in %.2f seconds = %.2f Mbit/sec\n",
-		       bytes, usec / 1000000., bytes * 8. / usec);
+				bytes, usec / 1000000., bytes * 8. / usec);
 		printf("%d iters in %.2f seconds = %.2f usec/iter\n",
-		       iters, usec / 1000000., usec / iters);
+				iters, usec / 1000000., usec / iters);
 	}
 
 	ibv_ack_cq_events(ctx->cq, num_cq_events);

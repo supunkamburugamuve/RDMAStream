@@ -1,8 +1,10 @@
-#include "stream.h"
+
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "stream.h"
 
 /**
  * Initialize the configuration to default values
@@ -54,14 +56,14 @@ int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int s
 		return 1;
 	}
 
+	ctx->channel = NULL;
 	if (use_event) {
 		ctx->channel = ibv_create_comp_channel(ctx->context);
 		if (!ctx->channel) {
 			fprintf(stderr, "Couldn't create completion channel\n");
 			return 1;
 		}
-	} else
-		ctx->channel = NULL;
+	}
 
 	ctx->pd = ibv_alloc_pd(ctx->context);
 	if (!ctx->pd) {
@@ -167,18 +169,18 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 		struct stream_dest *dest, int sgid_idx) {
 	int ret;
 	struct ibv_qp_attr attr = {
-			.qp_state		= IBV_QPS_RTR,
-			.path_mtu		= mtu,
-			.dest_qp_num	= dest->qpn,
-			.rq_psn			= dest->psn,
+			.qp_state = IBV_QPS_RTR,
+			.path_mtu = mtu,
+			.dest_qp_num = dest->qpn,
+			.rq_psn = dest->psn,
 			.max_dest_rd_atomic	= 1,
-			.min_rnr_timer		= 12,
-			.ah_attr		= {
-					.is_global	= 0,
-					.dlid		= dest->lid,
-					.sl		= sl,
-					.src_path_bits	= 0,
-					.port_num	= port
+			.min_rnr_timer = 12,
+			.ah_attr = {
+					.is_global = 0,
+					.dlid = dest->lid,
+					.sl	= sl,
+					.src_path_bits = 0,
+					.port_num = port
 			}
 	};
 
@@ -201,12 +203,12 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 		return ret;
 	}
 
-	attr.qp_state	    = IBV_QPS_RTS;
-	attr.timeout	    = 14;
-	attr.retry_cnt	    = 7;
-	attr.rnr_retry	    = 7;
-	attr.sq_psn	    = my_psn;
-	attr.max_rd_atomic  = 1;
+	attr.qp_state = IBV_QPS_RTS;
+	attr.timeout = 14;
+	attr.retry_cnt = 7;
+	attr.rnr_retry = 7;
+	attr.sq_psn = my_psn;
+	attr.max_rd_atomic = 1;
 	if ((ret = ibv_modify_qp(ctx->qp, &attr,
 			IBV_QP_STATE              |
 			IBV_QP_TIMEOUT            |
@@ -228,31 +230,31 @@ int stream_post_recv(struct stream_context *ctx, int n) {
 		.lkey	= ctx->mr->lkey
 	};
 	struct ibv_recv_wr wr = {
-		.wr_id	    = STREAM_RECV_WRID,
-		.sg_list    = &list,
-		.num_sge    = 1,
+		.wr_id = STREAM_RECV_WRID,
+		.sg_list = &list,
+		.num_sge = 1,
 	};
 	struct ibv_recv_wr *bad_wr;
 	int i;
-
-	for (i = 0; i < n; ++i)
-		if (ibv_post_recv(ctx->qp, &wr, &bad_wr))
+	for (i = 0; i < n; ++i) {
+		if (ibv_post_recv(ctx->qp, &wr, &bad_wr)) {
 			break;
-
+		}
+	}
 	return i;
 }
 
 int stream_post_send(struct stream_context *ctx) {
 	struct ibv_sge list = {
-		.addr	= (uintptr_t) ctx->buf,
+		.addr = (uintptr_t) ctx->buf,
 		.length = ctx->size,
-		.lkey	= ctx->mr->lkey
+		.lkey = ctx->mr->lkey
 	};
 	struct ibv_send_wr wr = {
-		.wr_id	    = STREAM_SEND_WRID,
-		.sg_list    = &list,
-		.num_sge    = 1,
-		.opcode     = IBV_WR_SEND,
+		.wr_id = STREAM_SEND_WRID,
+		.sg_list = &list,
+		.num_sge = 1,
+		.opcode = IBV_WR_SEND,
 		.send_flags = IBV_SEND_SIGNALED,
 	};
 	struct ibv_send_wr *bad_wr;

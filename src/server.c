@@ -200,21 +200,20 @@ static void usage(const char *argv0)
 	printf("  -g, --gid-idx=<gid index> local port gid index\n");
 }
 
-int main(int argc, char *argv[])
-{
-	struct ibv_device      **dev_list;
-	struct ibv_device	*ib_dev;
+int main(int argc, char *argv[]) {
+	struct ibv_device **dev_list;
+	struct ibv_device *ib_dev;
 	struct stream_context *ctx;
-	struct stream_dest     my_dest;
-	struct stream_dest    *rem_dest;
-	struct timeval           start, end;
+	struct stream_dest my_dest;
+	struct stream_dest *rem_dest;
+	struct timeval start, end;
 
-	int                      iters = 1000;
-	int                      routs;
-	int                      rcnt, scnt;
-	int                      num_cq_events = 0;
-	int			 gidx = -1;
-	char			 gid[33];
+	int iters = 1000;
+	int routs;
+	int rcnt, scnt;
+	int num_cq_events = 0;
+	int	gidx = -1;
+	char gid[33];
 
 	struct stream_cfg cfg;
 	ctx = calloc(1, sizeof *ctx);
@@ -328,9 +327,11 @@ int main(int argc, char *argv[])
 		}
 	} else {
 		int i;
-		for (i = 0; dev_list[i]; ++i)
-			if (!strcmp(ibv_get_device_name(dev_list[i]), cfg.ib_devname))
+		for (i = 0; dev_list[i]; ++i) {
+			if (!strcmp(ibv_get_device_name(dev_list[i]), cfg.ib_devname)) {
 				break;
+			}
+		}
 		ib_dev = dev_list[i];
 		if (!ib_dev) {
 			fprintf(stderr, "IB device %s not found\n", cfg.ib_devname);
@@ -349,12 +350,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (cfg.use_event)
+	if (cfg.use_event) {
 		if (ibv_req_notify_cq(ctx->cq, 0)) {
 			fprintf(stderr, "Couldn't request CQ notification\n");
 			return 1;
 		}
-
+	}
 
 	if (stream_get_port_info(ctx->context, cfg.ib_port, &ctx->portinfo)) {
 		fprintf(stderr, "Couldn't get port info\n");
@@ -372,8 +373,9 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Could not get local gid for gid index %d\n", gidx);
 			return 1;
 		}
-	} else
+	} else {
 		memset(&my_dest.gid, 0, sizeof my_dest.gid);
+	}
 
 	my_dest.qpn = ctx->qp->qp_num;
 	my_dest.psn = lrand48() & 0xffffff;
@@ -387,8 +389,9 @@ int main(int argc, char *argv[])
 	else
 		rem_dest = stream_server_exch_dest(ctx, cfg.ib_port, cfg.mtu, cfg.port, cfg.sl, &my_dest, gidx);
 
-	if (!rem_dest)
+	if (!rem_dest) {
 		return 1;
+	}
 
 	inet_ntop(AF_INET6, &rem_dest->gid, gid, sizeof gid);
 	printf("  remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
