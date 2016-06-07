@@ -21,14 +21,6 @@ void stream_init_cfg(struct stream_cfg *cfg) {
 	cfg->sl = 0;
 }
 
-/**
- * Initialize the configuration to default values
- */
-void stream_init_ctx(struct stream_context *ctx) {
-	ctx->dev_list = NULL;
-	ctx->device = NULL;
-}
-
 enum ibv_mtu stream_mtu_to_enum(int mtu) {
 	switch (mtu) {
 		case 256:  return IBV_MTU_256;
@@ -58,13 +50,13 @@ int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx) {
 	} else {
 		int i;
 		for (i = 0; dev_list[i]; ++i) {
-			if (!strcmp(ibv_get_device_name(dev_list[i]), cfg.ib_devname)) {
+			if (!strcmp(ibv_get_device_name(dev_list[i]), cfg->ib_devname)) {
 				break;
 			}
 		}
 		ib_dev = dev_list[i];
 		if (!ib_dev) {
-			fprintf(stderr, "IB device %s not found\n", cfg.ib_devname);
+			fprintf(stderr, "IB device %s not found\n", cfg->ib_devname);
 			return 1;
 		}
 	}
