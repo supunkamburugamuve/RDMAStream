@@ -326,9 +326,9 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	inet_ntop(AF_INET6, &my_dest.gid, gid, sizeof gid);
+	inet_ntop(AF_INET6, &ctx->self_dest.gid, gid, sizeof gid);
 	printf("  local address:  LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
-			my_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
+			ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
 
 
 	if (cfg.servername)
