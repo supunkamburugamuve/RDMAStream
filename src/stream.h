@@ -13,6 +13,16 @@ enum {
 static int page_size;
 
 /**
+ * An RDMA destination. This information is needed to connect a Queue Pair.
+ */
+struct stream_dest {
+	int lid;
+	int qpn;
+	int psn;
+	union ibv_gid gid;
+};
+
+/**
  * Keep track of the objects created for a connection.
  */
 struct stream_context {
@@ -33,16 +43,6 @@ struct stream_context {
 	struct ibv_device *device;
 	struct stream_dest self_dest;   // self destination
 	struct stream_dest *rem_dest;   // remote destination
-};
-
-/**
- * An RDMA destination. This information is needed to connect a Queue Pair.
- */
-struct stream_dest {
-	int lid;
-	int qpn;
-	int psn;
-	union ibv_gid gid;
 };
 
 /**

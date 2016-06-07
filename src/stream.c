@@ -179,8 +179,8 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx, int size
 		return 1;
 	}
 
-	if (cfg.gidx >= 0) {
-		if (ibv_query_gid(ctx->context, cfg.ib_port, cfg->gidx, &ctx->self_dest.gid)) {
+	if (cfg->gidx >= 0) {
+		if (ibv_query_gid(ctx->context, cfg->ib_port, cfg->gidx, &ctx->self_dest.gid)) {
 			fprintf(stderr, "Could not get local gid for gid index %d\n", cfg->gidx);
 			return 1;
 		}
