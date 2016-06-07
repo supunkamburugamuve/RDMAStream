@@ -31,6 +31,8 @@ struct stream_context {
 	struct ibv_device **dev_list;
 	// the device to use
 	struct ibv_device *device;
+	struct stream_dest self_dest;   // self destination
+	struct stream_dest *rem_dest;   // remote destination
 };
 
 /**
@@ -56,6 +58,7 @@ struct stream_cfg {
 	int rx_depth;         // receive depth
 	int use_event;
 	int sl;               // service level value
+	int gidx;             // gid value
 };
 
 /**
@@ -78,7 +81,7 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 /**
  * Initialize the infiniband objects
  */
-int stream_init_ctx(struct stream_context *ctx, int size,
+int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx, int size,
 		int rx_depth, int port,
 		int use_event, int is_server, int page_size);
 

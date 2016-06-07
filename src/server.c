@@ -317,7 +317,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if (stream_init_ctx(ctx, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername, page_size)) {
+	if (stream_init_ctx(&cfg, ctx, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername, page_size)) {
 		fprintf(stderr, "Failed to initialize context\n");
 		return 1;
 	}
@@ -326,33 +326,6 @@ int main(int argc, char *argv[]) {
 	if (routs < ctx->rx_depth) {
 		fprintf(stderr, "Couldn't post receive (%d)\n", routs);
 		return 1;
-	}
-
-	if (cfg.use_event) {
-		if (ibv_req_notify_cq(ctx->cq, 0)) {
-			fprintf(stderr, "Couldn't request CQ notification\n");
-			return 1;
-		}
-	}
-
-	if (stream_get_port_info(ctx->context, cfg.ib_port, &ctx->portinfo)) {
-		fprintf(stderr, "Couldn't get port info\n");
-		return 1;
-	}
-
-	my_dest.lid = ctx->portinfo.lid;
-	if (ctx->portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND && !my_dest.lid) {
-		fprintf(stderr, "Couldn't get local LID\n");
-		return 1;
-	}
-
-	if (gidx >= 0) {
-		if (ibv_query_gid(ctx->context, cfg.ib_port, gidx, &my_dest.gid)) {
-			fprintf(stderr, "Could not get local gid for gid index %d\n", gidx);
-			return 1;
-		}
-	} else {
-		memset(&my_dest.gid, 0, sizeof my_dest.gid);
 	}
 
 	my_dest.qpn = ctx->qp->qp_num;
