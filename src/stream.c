@@ -155,12 +155,6 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx, int size
 		return 1;
 	}
 
-	routs = stream_post_recv(ctx, ctx->rx_depth);
-	if (routs < ctx->rx_depth) {
-		fprintf(stderr, "Couldn't post receive (%d)\n", routs);
-		return 1;
-	}
-
 	if (cfg->use_event) {
 		if (ibv_req_notify_cq(ctx->cq, 0)) {
 			fprintf(stderr, "Couldn't request CQ notification\n");
