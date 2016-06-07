@@ -41,7 +41,7 @@ int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx) {
 		return 1;
 	}
 
-	if (!cfg.ib_devname) {
+	if (!cfg->ib_devname) {
 		ib_dev = *dev_list;
 		if (!ib_dev) {
 			fprintf(stderr, "No IB devices found\n");
