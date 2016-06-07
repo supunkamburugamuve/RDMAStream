@@ -322,11 +322,11 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	routs = stream_post_recv(ctx, ctx->rx_depth);
-	if (routs < ctx->rx_depth) {
-		fprintf(stderr, "Couldn't post receive (%d)\n", routs);
-		return 1;
-	}
+//	routs = stream_post_recv(ctx, ctx->rx_depth);
+//	if (routs < ctx->rx_depth) {
+//		fprintf(stderr, "Couldn't post receive (%d)\n", routs);
+//		return 1;
+//	}
 
 	my_dest.qpn = ctx->qp->qp_num;
 	my_dest.psn = lrand48() & 0xffffff;
