@@ -155,7 +155,35 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx, int size
 		return 1;
 	}
 
+	if (cfg->use_event) {
+		if (ibv_req_notify_cq(ctx->cq, 0)) {
+			fprintf(stderr, "Couldn't request CQ notification\n");
+			return 1;
+		}
+	}
 
+	if (stream_get_port_info(ctx->context, cfg->ib_port, &ctx->portinfo)) {
+		fprintf(stderr, "Couldn't get port info\n");
+		return 1;
+	}
+
+	ctx->self_dest.lid = ctx->portinfo.lid;
+	if (ctx->portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND && !ctx->self_dest.lid) {
+		fprintf(stderr, "Couldn't get local LID\n");
+		return 1;
+	}
+
+	if (cfg->gidx >= 0) {
+		if (ibv_query_gid(ctx->context, cfg->ib_port, cfg->gidx, &ctx->self_dest.gid)) {
+			fprintf(stderr, "Could not get local gid for gid index %d\n", cfg->gidx);
+			return 1;
+		}
+	} else {
+		memset(&ctx->self_dest.gid, 0, sizeof ctx->self_dest.gid);
+	}
+
+	ctx->self_dest.qpn = ctx->qp->qp_num;
+	ctx->self_dest.psn = lrand48() & 0xffffff;
 
 	return 0;
 }

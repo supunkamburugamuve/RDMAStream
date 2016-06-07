@@ -202,8 +202,6 @@ static void usage(const char *argv0) {
 
 int main(int argc, char *argv[]) {
 	struct stream_context *ctx;
-	struct stream_dest my_dest;
-	struct stream_dest *rem_dest;
 	struct timeval start, end;
 
 	int iters = 1000;
@@ -327,58 +325,26 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if (cfg.use_event) {
-		if (ibv_req_notify_cq(ctx->cq, 0)) {
-			fprintf(stderr, "Couldn't request CQ notification\n");
-			return 1;
-		}
-	}
-
-	if (stream_get_port_info(ctx->context, cfg.ib_port, &ctx->portinfo)) {
-		fprintf(stderr, "Couldn't get port info\n");
-		return 1;
-	}
-
-	ctx->self_dest.lid = ctx->portinfo.lid;
-	if (ctx->portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND && !ctx->self_dest.lid) {
-		fprintf(stderr, "Couldn't get local LID\n");
-		return 1;
-	}
-
-	if (cfg.gidx >= 0) {
-		if (ibv_query_gid(ctx->context, cfg.ib_port, cfg.gidx, &ctx->self_dest.gid)) {
-			fprintf(stderr, "Could not get local gid for gid index %d\n", cfg.gidx);
-			return 1;
-		}
-	} else {
-		memset(&ctx->self_dest.gid, 0, sizeof ctx->self_dest.gid);
-	}
-
-	ctx->self_dest.qpn = ctx->qp->qp_num;
-	ctx->self_dest.psn = lrand48() & 0xffffff;
-
-	my_dest.qpn = ctx->qp->qp_num;
-	my_dest.psn = lrand48() & 0xffffff;
-	inet_ntop(AF_INET6, &my_dest.gid, gid, sizeof gid);
+	inet_ntop(AF_INET6, &ctx->self_dest.gid, gid, sizeof gid);
 	printf("  local address:  LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
-			my_dest.lid, my_dest.qpn, my_dest.psn, gid);
+			ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
 
 
 	if (cfg.servername)
-		rem_dest = stream_client_exch_dest(cfg.servername, cfg.port, &my_dest);
+		ctx->rem_dest = stream_client_exch_dest(cfg.servername, cfg.port, &ctx->self_dest);
 	else
-		rem_dest = stream_server_exch_dest(ctx, cfg.ib_port, cfg.mtu, cfg.port, cfg.sl, &my_dest, gidx);
+		ctx->rem_dest = stream_server_exch_dest(ctx, cfg.ib_port, cfg.mtu, cfg.port, cfg.sl, &ctx->self_dest, gidx);
 
-	if (!rem_dest) {
+	if (!ctx->rem_dest) {
 		return 1;
 	}
 
-	inet_ntop(AF_INET6, &rem_dest->gid, gid, sizeof gid);
+	inet_ntop(AF_INET6, &ctx->rem_dest->gid, gid, sizeof gid);
 	printf("  remote address: LID 0x%04x, QPN 0x%06x, PSN 0x%06x, GID %s\n",
-			rem_dest->lid, rem_dest->qpn, rem_dest->psn, gid);
+			ctx->rem_dest->lid, ctx->rem_dest->qpn, ctx->rem_dest->psn, gid);
 
 	if (cfg.servername)
-		if (stream_connect_ctx(ctx, cfg.ib_port, my_dest.psn, cfg.mtu, cfg.sl, rem_dest, gidx))
+		if (stream_connect_ctx(ctx, cfg.ib_port, ctx->self_dest.psn, cfg.mtu, cfg.sl, ctx->rem_dest, gidx))
 			return 1;
 
 	ctx->pending = STREAM_RECV_WRID;
@@ -500,7 +466,7 @@ int main(int argc, char *argv[]) {
 	if (stream_close_ctx(ctx))
 		return 1;
 
-	free(rem_dest);
+	free(ctx->rem_dest);
 
 	return 0;
 }
