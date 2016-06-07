@@ -14,23 +14,23 @@ rdma.o: rdma.c
 clean_rdma:
 	rm -f rdma rdma.o
 
-stream: stream_verbs.o
+stream_verbs: stream_verbs.o
 	$(CC) $(CFLAGS) stream_verbs.o -o stream_verbs $(LDFLAGS) 
 
-stream.o: stream_verbs.c
+stream_verbs.o: stream_verbs.c
 	${CC} -c stream_verbs.c
 
-server: server.o common.o
-	$(CC) $(CFLAGS) server.o common.o -o server $(LDFLAGS) 
+server: server.o stream.o
+	$(CC) $(CFLAGS) server.o stream.o -o server $(LDFLAGS) 
 
-server.o: server.c common.c
-	${CC} -c server.c common.c	
+server.o: server.c stream.c
+	${CC} -c server.c stream.c	
 	
-client: client.o common.o
-	$(CC) $(CFLAGS) client.o common.o -o client $(LDFLAGS) 
+client: client.o stream.o
+	$(CC) $(CFLAGS) client.o stream.o -o client $(LDFLAGS) 
 
-client.o: client.c common.c
-	${CC} -c client.c common.c		
+client.o: client.c stream.c
+	${CC} -c client.c stream.c		
 
-common.o: common.c
-	${CC} -c common.c	
+strea.o: stream.c
+	${CC} -c stream.c	
