@@ -347,7 +347,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (cfg.gidx >= 0) {
-		if (ibv_query_gid(ctx->context, cfg.ib_port, cfg->gidx, &ctx->self_dest.gid)) {
+		if (ibv_query_gid(ctx->context, cfg.ib_port, cfg.gidx, &ctx->self_dest.gid)) {
 			fprintf(stderr, "Could not get local gid for gid index %d\n", cfg.gidx);
 			return 1;
 		}
