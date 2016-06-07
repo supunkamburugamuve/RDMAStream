@@ -21,6 +21,14 @@ void stream_init_cfg(struct stream_cfg *cfg) {
 	cfg->sl = 0;
 }
 
+/**
+ * Initialize the configuration to default values
+ */
+void stream_init_ctx(struct stream_context *ctx) {
+	ctx->dev_list = NULL;
+	ctx->device = NULL;
+}
+
 enum ibv_mtu stream_mtu_to_enum(int mtu) {
 	switch (mtu) {
 		case 256:  return IBV_MTU_256;
@@ -32,10 +40,45 @@ enum ibv_mtu stream_mtu_to_enum(int mtu) {
 	}
 }
 
+int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx) {
+	struct ibv_device **dev_list;
+	struct ibv_device *ib_dev;
+	dev_list = ibv_get_device_list(NULL);
+	if (!dev_list) {
+		perror("Failed to get IB devices list");
+		return 1;
+	}
+
+	if (!cfg.ib_devname) {
+		ib_dev = *dev_list;
+		if (!ib_dev) {
+			fprintf(stderr, "No IB devices found\n");
+			return 1;
+		}
+	} else {
+		int i;
+		for (i = 0; dev_list[i]; ++i) {
+			if (!strcmp(ibv_get_device_name(dev_list[i]), cfg.ib_devname)) {
+				break;
+			}
+		}
+		ib_dev = dev_list[i];
+		if (!ib_dev) {
+			fprintf(stderr, "IB device %s not found\n", cfg.ib_devname);
+			return 1;
+		}
+	}
+
+	ctx->dev_list = dev_list;
+	ctx->device = ib_dev;
+
+	return 0;
+}
+
 /**
  * Initialize the stream context by creating the infiniband objects
  */
-int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
+int stream_init_ctx(struct stream_context *ctx, int size,
 		int rx_depth, int port,
 		int use_event, int is_server, int page_size) {
 	ctx->size     = size;
@@ -49,10 +92,10 @@ int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int s
 
 	memset(ctx->buf, 0x7b + is_server, size);
 
-	ctx->context = ibv_open_device(ib_dev);
+	ctx->context = ibv_open_device(ctx->device);
 	if (!ctx->context) {
 		fprintf(stderr, "Couldn't get context for %s\n",
-				ibv_get_device_name(ib_dev));
+				ibv_get_device_name(ctx->device));
 		return 1;
 	}
 
@@ -84,42 +127,38 @@ int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int s
 		return 1;
 	}
 
-	{
-		struct ibv_qp_init_attr attr = {
-				.send_cq = ctx->cq,
-				.recv_cq = ctx->cq,
-				.cap     = {
-						.max_send_wr  = 1,
-						.max_recv_wr  = rx_depth,
-						.max_send_sge = 1,
-						.max_recv_sge = 1
-				},
-				.qp_type = IBV_QPT_RC
-		};
+	struct ibv_qp_init_attr init_attr = {
+			.send_cq = ctx->cq,
+			.recv_cq = ctx->cq,
+			.cap     = {
+					.max_send_wr  = 1,
+					.max_recv_wr  = rx_depth,
+					.max_send_sge = 1,
+					.max_recv_sge = 1
+			},
+			.qp_type = IBV_QPT_RC
+	};
 
-		ctx->qp = ibv_create_qp(ctx->pd, &attr);
-		if (!ctx->qp)  {
-			fprintf(stderr, "Couldn't create QP\n");
-			return 1;
-		}
+	ctx->qp = ibv_create_qp(ctx->pd, &init_attr);
+	if (!ctx->qp)  {
+		fprintf(stderr, "Couldn't create QP\n");
+		return 1;
 	}
 
-	{
-		struct ibv_qp_attr attr = {
-				.qp_state        = IBV_QPS_INIT,
-				.pkey_index      = 0,
-				.port_num        = port,
-				.qp_access_flags = 0
-		};
+	struct ibv_qp_attr attr = {
+			.qp_state        = IBV_QPS_INIT,
+			.pkey_index      = 0,
+			.port_num        = port,
+			.qp_access_flags = 0
+	};
 
-		if (ibv_modify_qp(ctx->qp, &attr,
-				IBV_QP_STATE              |
-				IBV_QP_PKEY_INDEX         |
-				IBV_QP_PORT               |
-				IBV_QP_ACCESS_FLAGS)) {
-			fprintf(stderr, "Failed to modify QP to INIT\n");
-			return 1;
-		}
+	if (ibv_modify_qp(ctx->qp, &attr,
+			IBV_QP_STATE              |
+			IBV_QP_PKEY_INDEX         |
+			IBV_QP_PORT               |
+			IBV_QP_ACCESS_FLAGS)) {
+		fprintf(stderr, "Failed to modify QP to INIT\n");
+		return 1;
 	}
 
 	return 0;
@@ -156,6 +195,10 @@ int stream_close_ctx(struct stream_context *ctx) {
 	if (ibv_close_device(ctx->context)) {
 		fprintf(stderr, "Couldn't release context\n");
 		return 1;
+	}
+
+	if (ctx->dev_list) {
+		ibv_free_device_list(ctx->dev_list);
 	}
 
 	free(ctx->buf);

@@ -27,6 +27,10 @@ struct stream_context {
 	int	rx_depth;
 	int	pending;
 	struct ibv_port_attr portinfo;
+	// device list to keep around until freed at the end
+	struct ibv_device **dev_list;
+	// the device to use
+	struct ibv_device *device;
 };
 
 /**
@@ -60,6 +64,11 @@ struct stream_cfg {
 void stream_init_cfg(struct stream_cfg *cfg);
 
 /**
+ * Get the requested device according to configuration.
+ */
+int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx);
+
+/**
  * Connect the qps
  */
 int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
@@ -69,7 +78,7 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 /**
  * Initialize the infiniband objects
  */
-int stream_init_ctx(struct stream_context *ctx, struct ibv_device *ib_dev, int size,
+int stream_init_ctx(struct stream_context *ctx, int size,
 		int rx_depth, int port,
 		int use_event, int is_server, int page_size);
 

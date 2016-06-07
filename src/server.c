@@ -201,8 +201,7 @@ static void usage(const char *argv0)
 }
 
 int main(int argc, char *argv[]) {
-	struct ibv_device **dev_list;
-	struct ibv_device *ib_dev;
+
 	struct stream_context *ctx;
 	struct stream_dest my_dest;
 	struct stream_dest *rem_dest;
@@ -304,42 +303,21 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	if (optind == argc - 1)
+	if (optind == argc - 1) {
 		cfg.servername = strdup(argv[optind]);
-	else if (optind < argc) {
+	} else if (optind < argc) {
 		usage(argv[0]);
 		return 1;
 	}
 
 	page_size = sysconf(_SC_PAGESIZE);
 
-	dev_list = ibv_get_device_list(NULL);
-	if (!dev_list) {
-		perror("Failed to get IB devices list");
+	if (stream_assign_device(&cfg, ctx)) {
+		fprintf(stderr, "Failed to get infiniband device\n");
 		return 1;
 	}
 
-	if (!cfg.ib_devname) {
-		ib_dev = *dev_list;
-		if (!ib_dev) {
-			fprintf(stderr, "No IB devices found\n");
-			return 1;
-		}
-	} else {
-		int i;
-		for (i = 0; dev_list[i]; ++i) {
-			if (!strcmp(ibv_get_device_name(dev_list[i]), cfg.ib_devname)) {
-				break;
-			}
-		}
-		ib_dev = dev_list[i];
-		if (!ib_dev) {
-			fprintf(stderr, "IB device %s not found\n", cfg.ib_devname);
-			return 1;
-		}
-	}
-
-	if (stream_init_ctx(ctx, ib_dev, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername, page_size)) {
+	if (stream_init_ctx(ctx, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername, page_size)) {
 		fprintf(stderr, "Failed to initialize context\n");
 		return 1;
 	}
@@ -520,7 +498,6 @@ int main(int argc, char *argv[]) {
 	if (stream_close_ctx(ctx))
 		return 1;
 
-	ibv_free_device_list(dev_list);
 	free(rem_dest);
 
 	return 0;
