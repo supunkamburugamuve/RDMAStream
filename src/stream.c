@@ -290,6 +290,29 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 	return 0;
 }
 
+int stream_post_recv_single(struct stream_context *ctx) {
+	int err, retries;
+
+	struct ibv_sge list = {
+		.addr	= (uintptr_t) ctx->buf,
+		.length = ctx->size,
+		.lkey	= ctx->mr->lkey
+	};
+	struct ibv_recv_wr wr = {
+		.wr_id = STREAM_RECV_WRID,
+		.sg_list = &list,
+		.num_sge = 1,
+	};
+	struct ibv_recv_wr *bad_wr;
+
+	retries = MAX_RETRIES;
+	do {
+		ibv_post_recv(ctx->qp, &wr, &bad_wr);
+	} while(err && --retries);
+
+	return err;
+}
+
 int stream_post_recv(struct stream_context *ctx, int n) {
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) ctx->buf,
@@ -312,6 +335,7 @@ int stream_post_recv(struct stream_context *ctx, int n) {
 }
 
 int stream_post_send(struct stream_context *ctx) {
+	int err, retries;
 	struct ibv_sge list = {
 		.addr = (uintptr_t) ctx->buf,
 		.length = ctx->size,
@@ -326,7 +350,12 @@ int stream_post_send(struct stream_context *ctx) {
 	};
 	struct ibv_send_wr *bad_wr;
 
-	return ibv_post_send(ctx->qp, &wr, &bad_wr);
+	retries = MAX_RETRIES;
+	do {
+		err = ibv_post_send(ctx->qp, &wr, &bad_wr);
+	} while(err && --retries);
+
+	return err;
 }
 
 

@@ -5,6 +5,8 @@
 
 #include <infiniband/verbs.h>
 
+#define MAX_RETRIES    1
+
 enum {
 	STREAM_RECV_WRID = 1,
 	STREAM_SEND_WRID = 2,
@@ -86,6 +88,7 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx, int size
 		int use_event, int is_server, int page_size);
 
 int stream_post_recv(struct stream_context *ctx, int n);
+int stream_post_recv_single(struct stream_context *ctx);
 int stream_post_send(struct stream_context *ctx);
 
 int stream_close_ctx(struct stream_context *ctx);
