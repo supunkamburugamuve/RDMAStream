@@ -72,7 +72,6 @@ int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx) {
  * Initialize the stream context by creating the infiniband objects
  */
 int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
-	int routs;
 	ctx->size     = cfg->size;
 	ctx->rx_depth = cfg->rx_depth;
 
@@ -92,7 +91,7 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
 	}
 
 	ctx->channel = NULL;
-	if (use_event) {
+	if (cfg->use_event) {
 		ctx->channel = ibv_create_comp_channel(ctx->context);
 		if (!ctx->channel) {
 			fprintf(stderr, "Couldn't create completion channel\n");
@@ -124,7 +123,7 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
 			.recv_cq = ctx->cq,
 			.cap     = {
 					.max_send_wr  = 1,
-					.max_recv_wr  = rx_depth,
+					.max_recv_wr  = cfg->rx_depth,
 					.max_send_sge = 1,
 					.max_recv_sge = 1
 			},
@@ -140,7 +139,7 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
 	struct ibv_qp_attr attr = {
 			.qp_state        = IBV_QPS_INIT,
 			.pkey_index      = 0,
-			.port_num        = port,
+			.port_num        = cfg->ib_port,
 			.qp_access_flags = 0
 	};
 
@@ -234,23 +233,23 @@ int stream_connect_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
 	struct ibv_qp_attr attr = {
 			.qp_state = IBV_QPS_RTR,
 			.path_mtu = cfg->mtu,
-			.dest_qp_num = ctx->rm_dest->qpn,
-			.rq_psn = ctx->dest->psn,
+			.dest_qp_num = ctx->rem_dest->qpn,
+			.rq_psn = ctx->rem_dest->psn,
 			.max_dest_rd_atomic	= 1,
 			.min_rnr_timer = 12,
 			.ah_attr = {
 					.is_global = 0,
-					.dlid = ctx->dest->lid,
+					.dlid = ctx->rem_dest->lid,
 					.sl	= cfg->sl,
 					.src_path_bits = 0,
 					.port_num = cfg->ib_port
 			}
 	};
 
-	if (ctx->dest->gid.global.interface_id) {
+	if (ctx->rem_dest->gid.global.interface_id) {
 		attr.ah_attr.is_global = 1;
 		attr.ah_attr.grh.hop_limit = 1;
-		attr.ah_attr.grh.dgid = dest->gid;
+		attr.ah_attr.grh.dgid = ctx->rem_dest->gid;
 		attr.ah_attr.grh.sgid_index = cfg->gidx;
 	}
 
@@ -270,7 +269,7 @@ int stream_connect_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
 	attr.timeout = 14;
 	attr.retry_cnt = 7;
 	attr.rnr_retry = 7;
-	attr.sq_psn = ctx->self_dest->psn;
+	attr.sq_psn = ctx->self_dest.psn;
 	attr.max_rd_atomic = 1;
 	if ((ret = ibv_modify_qp(ctx->qp, &attr,
 			IBV_QP_STATE              |
@@ -352,6 +351,41 @@ int stream_post_send(struct stream_context *ctx) {
 	} while(err && --retries);
 
 	return err;
+}
+
+int process_connect_request(struct stream_connect_req *req) {
+  struct stream_connect_req *conn_req = (struct stream_connect_req *)req;
+
+  // first lets allocate the contex
+  struct stream_context *ctx;
+  ctx = calloc(1, sizeof *ctx);
+  if (!ctx) {
+    goto error;
+  }
+
+  // get the available devices
+  if (stream_assign_device(conn_req->cfg, ctx)) {
+    fprintf(stderr, "Failed to get infiniband device\n");
+    goto error;
+  }
+
+  // initialize the context
+  if (stream_init_ctx(conn_req->cfg, ctx)) {
+    fprintf(stderr, "Failed to initialize context\n");
+    goto error;
+  }
+
+  // now connect the context to the destination
+  if (stream_connect_ctx(conn_req->cfg, ctx)) {
+    fprintf(stderr, "Couldn't connect to remote QP\n");
+    goto error;
+  }
+
+  // put this context in to a list
+
+  error:
+    stream_close_ctx(ctx);
+    return 1;
 }
 
 

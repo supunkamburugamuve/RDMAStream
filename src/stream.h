@@ -61,6 +61,15 @@ struct stream_cfg {
 	int use_event;
 	int sl;               // service level value
 	int gidx;             // gid value
+	int page_size;        // page size
+};
+
+/**
+ * Create a connection using this information. This is done in the server
+ */
+struct stream_connect_req {
+    struct stream_cfg *cfg;
+    struct stream_dest *dest;
 };
 
 /**
@@ -76,12 +85,17 @@ int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx);
 /**
  * Connect the qps
  */
-int stream_connect_ctx(struct stream_context *ctx);
+int stream_connect_ctx(struct stream_cfg *cfg, struct stream_context *ctx);
 
 /**
  * Initialize the infiniband objects
  */
 int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx);
+
+/**
+ * Process a connect request from a client
+ */
+int process_connect_request(struct stream_connect_req *req);
 
 int stream_post_recv(struct stream_context *ctx, int n);
 int stream_post_recv_single(struct stream_context *ctx);
