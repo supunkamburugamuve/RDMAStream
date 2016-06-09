@@ -76,16 +76,12 @@ int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx);
 /**
  * Connect the qps
  */
-int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
-		enum ibv_mtu mtu, int sl,
-		struct stream_dest *dest, int sgid_idx);
+int stream_connect_ctx(struct stream_context *ctx);
 
 /**
  * Initialize the infiniband objects
  */
-int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx, int size,
-		int rx_depth, int port,
-		int use_event, int is_server, int page_size);
+int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx);
 
 int stream_post_recv(struct stream_context *ctx, int n);
 int stream_post_recv_single(struct stream_context *ctx);

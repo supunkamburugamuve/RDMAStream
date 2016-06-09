@@ -71,20 +71,18 @@ int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx) {
 /**
  * Initialize the stream context by creating the infiniband objects
  */
-int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx, int size,
-		int rx_depth, int port,
-		int use_event, int is_server, int page_size) {
+int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
 	int routs;
-	ctx->size     = size;
-	ctx->rx_depth = rx_depth;
+	ctx->size     = cfg->size;
+	ctx->rx_depth = cfg->rx_depth;
 
-	ctx->buf = malloc(roundup(size, page_size));
+	ctx->buf = malloc(roundup(cfg->size, cfg->page_size));
 	if (!ctx->buf) {
 		fprintf(stderr, "Couldn't allocate work buf.\n");
 		return 1;
 	}
 
-	memset(ctx->buf, 0x7b + is_server, size);
+	memset(ctx->buf, 0x7b + !cfg->servername, cfg->size);
 
 	ctx->context = ibv_open_device(ctx->device);
 	if (!ctx->context) {
@@ -108,13 +106,13 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx, int size
 		return 1;
 	}
 
-	ctx->mr = ibv_reg_mr(ctx->pd, ctx->buf, size, IBV_ACCESS_LOCAL_WRITE);
+	ctx->mr = ibv_reg_mr(ctx->pd, ctx->buf, cfg->size, IBV_ACCESS_LOCAL_WRITE);
 	if (!ctx->mr) {
 		fprintf(stderr, "Couldn't register MR\n");
 		return 1;
 	}
 
-	ctx->cq = ibv_create_cq(ctx->context, rx_depth + 1, NULL,
+	ctx->cq = ibv_create_cq(ctx->context, cfg->rx_depth + 1, NULL,
 			ctx->channel, 0);
 	if (!ctx->cq) {
 		fprintf(stderr, "Couldn't create CQ\n");
@@ -231,31 +229,29 @@ int stream_close_ctx(struct stream_context *ctx) {
 	return 0;
 }
 
-int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
-		enum ibv_mtu mtu, int sl,
-		struct stream_dest *dest, int sgid_idx) {
+int stream_connect_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
 	int ret;
 	struct ibv_qp_attr attr = {
 			.qp_state = IBV_QPS_RTR,
-			.path_mtu = mtu,
-			.dest_qp_num = dest->qpn,
-			.rq_psn = dest->psn,
+			.path_mtu = cfg->mtu,
+			.dest_qp_num = ctx->rm_dest->qpn,
+			.rq_psn = ctx->dest->psn,
 			.max_dest_rd_atomic	= 1,
 			.min_rnr_timer = 12,
 			.ah_attr = {
 					.is_global = 0,
-					.dlid = dest->lid,
-					.sl	= sl,
+					.dlid = ctx->dest->lid,
+					.sl	= cfg->sl,
 					.src_path_bits = 0,
-					.port_num = port
+					.port_num = cfg->ib_port
 			}
 	};
 
-	if (dest->gid.global.interface_id) {
+	if (ctx->dest->gid.global.interface_id) {
 		attr.ah_attr.is_global = 1;
 		attr.ah_attr.grh.hop_limit = 1;
 		attr.ah_attr.grh.dgid = dest->gid;
-		attr.ah_attr.grh.sgid_index = sgid_idx;
+		attr.ah_attr.grh.sgid_index = cfg->gidx;
 	}
 
 	if ((ret = ibv_modify_qp(ctx->qp, &attr,
@@ -274,7 +270,7 @@ int stream_connect_ctx(struct stream_context *ctx, int port, int my_psn,
 	attr.timeout = 14;
 	attr.retry_cnt = 7;
 	attr.rnr_retry = 7;
-	attr.sq_psn = my_psn;
+	attr.sq_psn = ctx->self_dest->psn;
 	attr.max_rd_atomic = 1;
 	if ((ret = ibv_modify_qp(ctx->qp, &attr,
 			IBV_QP_STATE              |

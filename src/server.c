@@ -14,9 +14,49 @@
 
 #include "stream.h"
 
+struct stream_connect_req {
+    struct stream_cfg *cfg;
+    struct stream_dest *dest;
+};
+
+int process_connect_request(struct stream_connect_req *req) {
+  struct stream_connect_req *conn_req = (struct stream_connect_req *)req;
+  
+  // first lets allocate the contex
+  struct stream_context *ctx;
+  ctx = calloc(1, sizeof *ctx);
+  if (!ctx) {
+    goto error;
+  }
+
+  // get the available devices
+  if (stream_assign_device(&cfg, ctx)) {
+    fprintf(stderr, "Failed to get infiniband device\n");
+    goto error;
+  }
+
+  // intialize the context
+  if (stream_init_ctx(&cfg, ctx)) {
+    fprintf(stderr, "Failed to initialize context\n");
+    goto error;
+  }
+ 
+  // now connect the context
+  if (stream_connect_ctx(cfg, ctx)) {
+    fprintf(stderr, "Couldn't connect to remote QP\n");
+    goto error;
+  }
+  
+  // put this context in to a list
+  
+  error:
+    stream_close_ctx(ctx);
+    return 1;
+}
+
 static struct stream_dest *stream_client_exch_dest(const char *servername, int port,
 		const struct stream_dest *my_dest) {
-	struct addrinfo *res, *t;
+        struct addrinfo *res, *t;
 	struct addrinfo hints = {
 			.ai_family   = AF_INET,
 			.ai_socktype = SOCK_STREAM
@@ -181,8 +221,7 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
 	return rem_dest;
 }
 
-static void usage(const char *argv0)
-{
+static void usage(const char *argv0){
 	printf("Usage:\n");
 	printf("  %s            start a server and wait for connection\n", argv0);
 	printf("  %s <host>     connect to server at <host>\n", argv0);
@@ -315,7 +354,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if (stream_init_ctx(&cfg, ctx, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername, page_size)) {
+	if (stream_init_ctx(&cfg, ctx)) {
 		fprintf(stderr, "Failed to initialize context\n");
 		return 1;
 	}

@@ -314,7 +314,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	if (stream_init_ctx(&cfg, ctx, cfg.size, cfg.rx_depth, cfg.ib_port, cfg.use_event, !cfg.servername, page_size)) {
+	if (stream_init_ctx(&cfg, ctx)) {
 		fprintf(stderr, "Failed to initialize context\n");
 		return 1;
 	}
