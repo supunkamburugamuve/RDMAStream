@@ -93,6 +93,13 @@ int stream_post_send(struct stream_context *ctx);
 
 int stream_close_ctx(struct stream_context *ctx);
 
+/**
+ * Server and client functions
+ */
+int stream_server_connect(struct stream_context *ctx, struct stream_cfg *cfg,
+		const struct stream_dest *self_dest);
+
+
 enum ibv_mtu stream_mtu_to_enum(int mtu);
 uint16_t stream_get_local_lid(struct ibv_context *context, int port);
 int stream_get_port_info(struct ibv_context *context, int port,
