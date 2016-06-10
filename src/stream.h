@@ -95,7 +95,7 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx);
 /**
  * Process a connect request from a client
  */
-int process_connect_request(struct stream_connect_req *req);
+struct stream_ctx * stream_process_connect_request(struct stream_connect_req *req);
 
 int stream_post_recv(struct stream_context *ctx, int n);
 int stream_post_recv_single(struct stream_context *ctx);

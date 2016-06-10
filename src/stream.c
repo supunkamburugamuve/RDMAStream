@@ -353,39 +353,38 @@ int stream_post_send(struct stream_context *ctx) {
 	return err;
 }
 
-int process_connect_request(struct stream_connect_req *req) {
-  struct stream_connect_req *conn_req = (struct stream_connect_req *)req;
-
-  // first lets allocate the contex
+struct stream_ctx * stream_process_connect_request(struct stream_cfg *cfg, struct stream_dest *dest) {
+  // first lets allocate the context
   struct stream_context *ctx;
   ctx = calloc(1, sizeof *ctx);
   if (!ctx) {
     goto error;
   }
+  ctx->rem_dest = dest;
 
   // get the available devices
-  if (stream_assign_device(conn_req->cfg, ctx)) {
+  if (stream_assign_device(cfg, ctx)) {
     fprintf(stderr, "Failed to get infiniband device\n");
     goto error;
   }
 
   // initialize the context
-  if (stream_init_ctx(conn_req->cfg, ctx)) {
+  if (stream_init_ctx(cfg, ctx)) {
     fprintf(stderr, "Failed to initialize context\n");
     goto error;
   }
 
   // now connect the context to the destination
-  if (stream_connect_ctx(conn_req->cfg, ctx)) {
+  if (stream_connect_ctx(cfg, ctx)) {
     fprintf(stderr, "Couldn't connect to remote QP\n");
     goto error;
   }
 
-  // put this context in to a list
+  return ctx;
 
   error:
     stream_close_ctx(ctx);
-    return 1;
+    return NULL;
 }
 
 

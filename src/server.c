@@ -17,8 +17,101 @@
 /**
  * Read incoming TCP messages and create verbs connections to clients
  */
-void *stream_tcp_server_request_handler(void *threadarg) {
+void *stream_tcp_server_thread(void *thread) {
+	struct stream_cfg *cfg = (struct stream_cfg *) thread;
 
+	struct addrinfo *res, *t;
+	struct addrinfo hints = {
+			.ai_flags    = AI_PASSIVE,
+			.ai_family   = AF_INET,
+			.ai_socktype = SOCK_STREAM
+	};
+
+	char *service;
+	int n;
+	int sockfd = -1;
+
+	if (asprintf(&service, "%d", cfg->port) < 0)
+		return NULL;
+
+	n = getaddrinfo(NULL, service, &hints, &res);
+
+	if (n < 0) {
+		fprintf(stderr, "%s for port %d\n", gai_strerror(n), cfg->port);
+		free(service);
+		return NULL;
+	}
+
+	for (t = res; t; t = t->ai_next) {
+		sockfd = socket(t->ai_family, t->ai_socktype, t->ai_protocol);
+		if (sockfd >= 0) {
+			n = 1;
+
+			setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &n, sizeof n);
+
+			if (!bind(sockfd, t->ai_addr, t->ai_addrlen))
+				break;
+			close(sockfd);
+			sockfd = -1;
+		}
+	}
+
+	freeaddrinfo(res);
+	free(service);
+
+	if (sockfd < 0) {
+		fprintf(stderr, "Couldn't listen to port %d\n", cfg->port);
+		return NULL;
+	}
+
+	listen(sockfd, 1);
+
+	while (1) {
+		char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
+		int n;
+		int connfd;
+		struct stream_dest *rem_dest = NULL;
+		char gid[33];
+		struct stream_context *ctx;
+
+		connfd = accept(sockfd, NULL, 0);
+		close(sockfd);
+		if (connfd < 0) {
+			fprintf(stderr, "accept() failed\n");
+			return NULL;
+		}
+
+		n = read(connfd, msg, sizeof msg);
+		if (n != sizeof msg) {
+			perror("server read");
+			fprintf(stderr, "%d/%d: Couldn't read remote address\n", n, (int) sizeof msg);
+			goto out;
+		}
+
+		rem_dest = malloc(sizeof *rem_dest);
+		if (!rem_dest) {
+			goto out;
+		}
+
+		sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
+		wire_gid_to_gid(gid, &rem_dest->gid);
+
+		ctx = process_connect_request(cfg, rem_dest);
+
+		gid_to_wire_gid(ctx->self_dest.gid, gid);
+		sprintf(msg, "%04x:%06x:%06x:%s", ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
+		if (write(connfd, msg, sizeof msg) != sizeof msg) {
+			fprintf(stderr, "Couldn't send local address\n");
+			free(rem_dest);
+			rem_dest = NULL;
+			goto out;
+		}
+
+		read(connfd, msg, sizeof msg);
+
+		out:
+		close(connfd);
+	}
 }
 
 static struct stream_dest *stream_client_exch_dest(const char *servername, int port,
