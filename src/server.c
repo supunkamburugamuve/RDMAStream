@@ -14,11 +14,23 @@
 
 #include "stream.h"
 
+#define MAX_CONNECTIONS 100
+
+struct stream_connections {
+	struct stream_context ctxs[MAX_CONNECTIONS];
+	int count;
+};
+
+struct stream_tcp_server_info {
+	struct stream_cfg *cfg;
+	struct stream_connections *conns;
+};
 /**
  * Read incoming TCP messages and create verbs connections to clients
  */
 void *stream_tcp_server_thread(void *thread) {
-	struct stream_cfg *cfg = (struct stream_cfg *) thread;
+	struct stream_tcp_server_info *tcp_server = (struct stream_tcp_server_info *) thread;
+	struct stream_cfg *cfg = tcp_server->cfg;
 
 	struct addrinfo *res, *t;
 	struct addrinfo hints = {
@@ -109,9 +121,15 @@ void *stream_tcp_server_thread(void *thread) {
 
 		read(connfd, msg, sizeof msg);
 
+		tcp_server->conns->ctxs[tcp_server->conns->count++] = ctx;
+
 		out:
 		close(connfd);
 	}
+}
+
+static int stream_process_messages() {
+	// go through the
 }
 
 static struct stream_dest *stream_client_exch_dest(const char *servername, int port,
