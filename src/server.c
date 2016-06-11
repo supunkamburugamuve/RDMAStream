@@ -27,6 +27,19 @@ struct stream_tcp_server_info {
 	struct stream_connections *conns;
 };
 
+struct stream_tcp_server_worker_info {
+	struct stream_cfg *cfg;
+	struct stream_context *context;
+};
+
+void *stream_tcp_server_worker_thread(void *thread) {
+	struct stream_tcp_server_worker_info *tcp_worker = (struct stream_tcp_server_worker_info *) thread;
+	struct stream_cfg *cfg = tcp_worker->cfg;
+	struct stream_context *ctx = tcp_worker->context;
+
+	stream_process_messages(cfg, ctx);
+}
+
 /**
  * Read incoming TCP messages and create verbs connections to clients
  */
@@ -124,6 +137,18 @@ void *stream_tcp_server_thread(void *thread) {
 
 		read(connfd, msg, sizeof msg);
 
+		pthread_t worker_thread;
+		struct stream_tcp_server_worker_info * worker_ctx = calloc(1, sizeof (struct stream_tcp_server_worker_info));
+		if (!worker_ctx) {
+			return NULL;
+		}
+
+		// start the TCP server thread for accepting incoming communications
+		if (pthread_create(&worker_thread, NULL, stream_tcp_server_worker_thread,
+				(void *) worker_ctx)) {
+
+		}
+
 		tcp_server->conns->ctxs[tcp_server->conns->count++] = ctx;
 
 		out:
@@ -131,7 +156,9 @@ void *stream_tcp_server_thread(void *thread) {
 	}
 }
 
-static int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) {
+
+
+int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) {
 	struct timeval start, end;
 
 	int iters = 1000;
@@ -397,7 +424,7 @@ int main(int argc, char *argv[]) {
 	}
 	stream_init_cfg(cfg);
 
-	ctx = calloc(1, sizeof (struct stream_cfg));
+	ctx = calloc(1, sizeof (struct stream_context));
 	if (!ctx) {
 		return 1;
 	}
