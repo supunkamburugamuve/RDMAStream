@@ -157,12 +157,12 @@ static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
 	sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
 	wire_gid_to_gid(gid, &rem_dest->gid);
 
-	if (stream_connect_ctx(ctx, ib_port, my_dest->psn, mtu, sl, rem_dest, sgid_idx)) {
-		fprintf(stderr, "Couldn't connect to remote QP\n");
-		free(rem_dest);
-		rem_dest = NULL;
-		goto out;
-	}
+//	if (stream_connect_ctx(ctx, ib_port, my_dest->psn, mtu, sl, rem_dest, sgid_idx)) {
+//		fprintf(stderr, "Couldn't connect to remote QP\n");
+//		free(rem_dest);
+//		rem_dest = NULL;
+//		goto out;
+//	}
 
 
 	gid_to_wire_gid(&my_dest->gid, gid);
@@ -208,7 +208,6 @@ int main(int argc, char *argv[]) {
 	int routs;
 	int rcnt, scnt;
 	int num_cq_events = 0;
-	int	gidx = -1;
 	char gid[33];
 
 	struct stream_cfg cfg;
@@ -291,7 +290,7 @@ int main(int argc, char *argv[]) {
 			break;
 
 		case 'g':
-			gidx = strtol(optarg, NULL, 0);
+			cfg.gidx = strtol(optarg, NULL, 0);
 			break;
 
 		default:
@@ -307,7 +306,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	page_size = sysconf(_SC_PAGESIZE);
+	cfg.page_size = sysconf(_SC_PAGESIZE);
 
 	if (stream_assign_device(&cfg, ctx)) {
 		fprintf(stderr, "Failed to get infiniband device\n");
@@ -333,7 +332,7 @@ int main(int argc, char *argv[]) {
 	if (cfg.servername)
 		ctx->rem_dest = stream_client_exch_dest(cfg.servername, cfg.port, &ctx->self_dest);
 	else
-		ctx->rem_dest = stream_server_exch_dest(ctx, cfg.ib_port, cfg.mtu, cfg.port, cfg.sl, &ctx->self_dest, gidx);
+		ctx->rem_dest = stream_server_exch_dest(ctx, cfg.ib_port, cfg.mtu, cfg.port, cfg.sl, &ctx->self_dest, cfg.gidx);
 
 	if (!ctx->rem_dest) {
 		return 1;
@@ -344,7 +343,7 @@ int main(int argc, char *argv[]) {
 			ctx->rem_dest->lid, ctx->rem_dest->qpn, ctx->rem_dest->psn, gid);
 
 	if (cfg.servername)
-		if (stream_connect_ctx(ctx, cfg.ib_port, ctx->self_dest.psn, cfg.mtu, cfg.sl, ctx->rem_dest, gidx))
+		if (stream_connect_ctx(&cfg, ctx))
 			return 1;
 
 	ctx->pending = STREAM_RECV_WRID;
