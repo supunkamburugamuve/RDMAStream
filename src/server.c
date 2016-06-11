@@ -158,8 +158,6 @@ void *stream_tcp_server_thread(void *thread) {
 	}
 }
 
-
-
 int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) {
 	struct timeval start, end;
 
