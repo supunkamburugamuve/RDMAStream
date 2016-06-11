@@ -142,6 +142,8 @@ void *stream_tcp_server_thread(void *thread) {
 		if (!worker_ctx) {
 			return NULL;
 		}
+		worker_ctx->cfg = cfg;
+		worker_ctx->context = ctx;
 
 		// start the TCP server thread for accepting incoming communications
 		if (pthread_create(&worker_thread, NULL, stream_tcp_server_worker_thread,
@@ -285,6 +287,8 @@ int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) 
 
 	if (stream_close_ctx(ctx))
 		return 1;
+
+	return 0;
 }
 
 static struct stream_dest *stream_server_exch_dest(struct stream_cfg *cfg,
