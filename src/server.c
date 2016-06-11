@@ -93,9 +93,9 @@ void *stream_tcp_server_thread(void *thread) {
 	}
 
 	listen(sockfd, 1);
-
+	char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
 	while (1) {
-		char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
+
 		int n;
 		int connfd;
 		struct stream_dest *rem_dest = NULL;
@@ -148,7 +148,8 @@ void *stream_tcp_server_thread(void *thread) {
 		// start the TCP server thread for accepting incoming communications
 		if (pthread_create(&worker_thread, NULL, stream_tcp_server_worker_thread,
 				(void *) worker_ctx)) {
-
+			fprintf(stderr, "Couldn't create worker thread\n");
+			goto out;
 		}
 
 		tcp_server->conns->ctxs[tcp_server->conns->count++] = ctx;
