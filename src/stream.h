@@ -12,8 +12,6 @@ enum {
 	STREAM_SEND_WRID = 2,
 };
 
-static int page_size;
-
 /**
  * An RDMA destination. This information is needed to connect a Queue Pair.
  */
@@ -95,7 +93,7 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx);
 /**
  * Process a connect request from a client
  */
-struct stream_ctx * stream_process_connect_request(struct stream_connect_req *req);
+struct stream_context * stream_process_connect_request(struct stream_cfg *cfg, struct stream_dest *dest);
 
 int stream_post_recv(struct stream_context *ctx, int n);
 int stream_post_recv_single(struct stream_context *ctx);

@@ -353,7 +353,7 @@ int stream_post_send(struct stream_context *ctx) {
 	return err;
 }
 
-struct stream_ctx * stream_process_connect_request(struct stream_cfg *cfg, struct stream_dest *dest) {
+struct stream_context * stream_process_connect_request(struct stream_cfg *cfg, struct stream_dest *dest) {
   // first lets allocate the context
   struct stream_context *ctx;
   ctx = calloc(1, sizeof *ctx);

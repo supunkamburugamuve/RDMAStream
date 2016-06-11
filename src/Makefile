@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -g
 #LDFLAGS= -lrdmacm -libverbs
-LDFLAGS= -libverbs
+LDFLAGS= -libverbs -pthread
 
 all: rdma
 
