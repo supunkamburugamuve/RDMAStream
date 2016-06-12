@@ -176,7 +176,7 @@ int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) 
 	struct timeval start, end;
 
 	int iters = 1000;
-	int routs;
+	int routs = ctx->rx_depth;
 	int rcnt, scnt;
 	int num_cq_events = 0;
 
