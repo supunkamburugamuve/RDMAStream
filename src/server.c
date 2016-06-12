@@ -183,15 +183,6 @@ int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) 
     printf("steram process messages \n");
 	ctx->pending = STREAM_RECV_WRID;
 
-	// go through the messages and process them
-//	if (cfg->servername) {
-//		if (stream_post_send(ctx)) {
-//			fprintf(stderr, "Couldn't post send\n");
-//			return 1;
-//		}
-//		ctx->pending |= STREAM_SEND_WRID;
-//	}
-
 	if (gettimeofday(&start, NULL)) {
 		perror("gettimeofday");
 		return 1;
@@ -224,7 +215,7 @@ int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) 
 		{
 			struct ibv_wc wc[2];
 			int ne, i;
-
+			printf("Wait for completion\n");
 			do {
 				ne = ibv_poll_cq(ctx->cq, 2, wc);
 				if (ne < 0) {
@@ -233,7 +224,7 @@ int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) 
 				}
 
 			} while (!cfg->use_event && ne < 1);
-
+			printf("Done Wait for completion\n");
 			for (i = 0; i < ne; ++i) {
 				if (wc[i].status != IBV_WC_SUCCESS) {
 					fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
