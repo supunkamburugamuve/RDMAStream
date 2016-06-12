@@ -17,6 +17,8 @@
 
 #define MAX_CONNECTIONS 100
 
+int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx);
+
 struct stream_connections {
 	struct stream_context *ctxs[MAX_CONNECTIONS];
 	int count;
@@ -39,6 +41,7 @@ void *stream_tcp_server_worker_thread(void *thread) {
 
 	printf("Start processing the request\n");
 	stream_process_messages(cfg, ctx);
+	return NULL;
 }
 
 /**
@@ -416,14 +419,11 @@ static void usage(const char *argv0){
 int main(int argc, char *argv[]) {
 
 	struct stream_context *ctx;
-	struct timeval start, end;
 
-	int iters = 1000;
-	int routs;
-	int rcnt, scnt;
 	int num_cq_events = 0;
 	int	gidx = -1;
 	char gid[33];
+	int iters;
 	// server thread
 	pthread_t server_thread;
 
