@@ -309,6 +309,7 @@ int stream_post_recv_single(struct stream_context *ctx) {
 }
 
 int stream_post_recv(struct stream_context *ctx, int n) {
+	printf("recv message\n");
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) ctx->buf,
 		.length = ctx->size,
@@ -330,6 +331,7 @@ int stream_post_recv(struct stream_context *ctx, int n) {
 }
 
 int stream_post_send(struct stream_context *ctx) {
+	printf("send message\n");
 	int err, retries;
 	struct ibv_sge list = {
 		.addr = (uintptr_t) ctx->buf,
