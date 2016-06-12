@@ -107,7 +107,6 @@ void *stream_tcp_server_thread(void *thread) {
 		struct stream_context *ctx;
 
 		connfd = accept(sockfd, NULL, 0);
-		close(sockfd);
 		if (connfd < 0) {
 			fprintf(stderr, "accept() failed\n");
 			return NULL;
@@ -162,8 +161,6 @@ void *stream_tcp_server_thread(void *thread) {
 			goto out;
 		}
 
-		tcp_server->conns->ctxs[tcp_server->conns->count++] = ctx;
-
 		out:
 		close(connfd);
 	}
@@ -177,6 +174,7 @@ int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) 
 	int rcnt, scnt;
 	int num_cq_events = 0;
 
+        printf("steram process messages \n");
 	ctx->pending = STREAM_RECV_WRID;
 
 	// go through the messages and process them
