@@ -374,6 +374,12 @@ struct stream_context * stream_process_connect_request(struct stream_cfg *cfg, s
     goto error;
   }
 
+  int routs = stream_post_recv(ctx, ctx->rx_depth);
+	if (routs < ctx->rx_depth) {
+		fprintf(stderr, "Couldn't post receive (%d)\n", routs);
+		return 1;
+	}
+
   // now connect the context to the destination
   if (stream_connect_ctx(cfg, ctx)) {
     fprintf(stderr, "Couldn't connect to remote QP\n");

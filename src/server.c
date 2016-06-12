@@ -379,7 +379,6 @@ static struct stream_dest *stream_server_exch_dest(struct stream_cfg *cfg,
 		goto out;
 	}
 
-
 	gid_to_wire_gid(&my_dest->gid, gid);
 	sprintf(msg, "%04x:%06x:%06x:%s", my_dest->lid, my_dest->qpn, my_dest->psn, gid);
 	if (write(connfd, msg, sizeof msg) != sizeof msg) {
