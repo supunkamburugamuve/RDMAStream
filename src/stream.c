@@ -16,7 +16,7 @@ void stream_init_cfg(struct stream_cfg *cfg) {
 	cfg->ib_port = 1;
 	cfg->size = 4096;
 	cfg->mtu = IBV_MTU_1024;
-	cfg->rx_depth = 500;
+	cfg->rx_depth = 12;
 	cfg->use_event = 0;
 	cfg->sl = 0;
 	cfg->gidx = -1;
