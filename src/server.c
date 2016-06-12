@@ -37,6 +37,7 @@ void *stream_tcp_server_worker_thread(void *thread) {
 	struct stream_cfg *cfg = tcp_worker->cfg;
 	struct stream_context *ctx = tcp_worker->context;
 
+	printf("Start processing the request\n");
 	stream_process_messages(cfg, ctx);
 }
 
@@ -108,7 +109,7 @@ void *stream_tcp_server_thread(void *thread) {
 			fprintf(stderr, "accept() failed\n");
 			return NULL;
 		}
-
+		printf("Wait for new connection:\n");
 		n = read(connfd, msg, sizeof msg);
 		if (n != sizeof msg) {
 			perror("server read");
