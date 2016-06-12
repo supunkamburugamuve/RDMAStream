@@ -125,6 +125,7 @@ void *stream_tcp_server_thread(void *thread) {
 		sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
 		wire_gid_to_gid(gid, &rem_dest->gid);
 
+		printf("Connect context:\n");
 		ctx = stream_process_connect_request(cfg, rem_dest);
 
 		gid_to_wire_gid(&ctx->self_dest.gid, gid);
