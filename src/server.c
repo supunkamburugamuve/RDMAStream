@@ -127,6 +127,9 @@ void *stream_tcp_server_thread(void *thread) {
 
 		printf("Connect context:\n");
 		ctx = stream_process_connect_request(cfg, rem_dest);
+		if (!ctx) {
+			printf("Failed to connect context: \n");
+		}
 
 		gid_to_wire_gid(&ctx->self_dest.gid, gid);
 		sprintf(msg, "%04x:%06x:%06x:%s", ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
