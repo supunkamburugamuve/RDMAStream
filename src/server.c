@@ -141,6 +141,7 @@ void *stream_tcp_server_thread(void *thread) {
 			goto out;
 		}
 
+		printf("Connected context 2 \n");
 		read(connfd, msg, sizeof msg);
 
 		pthread_t worker_thread;
