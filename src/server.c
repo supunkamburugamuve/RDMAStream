@@ -134,6 +134,12 @@ void *stream_tcp_server_thread(void *thread) {
 		}
 		printf("Connected context:\n");
 
+	  int routs = stream_post_recv(ctx, ctx->rx_depth);
+		if (routs < ctx->rx_depth) {
+			fprintf(stderr, "Couldn't post receive (%d)\n", routs);
+			return 1;
+		}
+
 		gid_to_wire_gid(&ctx->self_dest.gid, gid);
 		sprintf(msg, "%04x:%06x:%06x:%s", ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
 		if (write(connfd, msg, sizeof msg) != sizeof msg) {
@@ -174,17 +180,17 @@ int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) 
 	int rcnt, scnt;
 	int num_cq_events = 0;
 
-        printf("steram process messages \n");
+    printf("steram process messages \n");
 	ctx->pending = STREAM_RECV_WRID;
 
 	// go through the messages and process them
-	if (cfg->servername) {
-		if (stream_post_send(ctx)) {
-			fprintf(stderr, "Couldn't post send\n");
-			return 1;
-		}
-		ctx->pending |= STREAM_SEND_WRID;
-	}
+//	if (cfg->servername) {
+//		if (stream_post_send(ctx)) {
+//			fprintf(stderr, "Couldn't post send\n");
+//			return 1;
+//		}
+//		ctx->pending |= STREAM_SEND_WRID;
+//	}
 
 	if (gettimeofday(&start, NULL)) {
 		perror("gettimeofday");
