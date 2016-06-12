@@ -388,7 +388,6 @@ int main(int argc, char *argv[]) {
 		{
 			struct ibv_wc wc[2];
 			int ne, i;
-			printf("Wait for completion\n");
 			do {
 				ne = ibv_poll_cq(ctx->cq, 2, wc);
 				if (ne < 0) {
@@ -398,7 +397,6 @@ int main(int argc, char *argv[]) {
 
 			} while (!cfg.use_event && ne < 1);
 
-			printf("Done Wait for completion\n");
 			for (i = 0; i < ne; ++i) {
 				if (wc[i].status != IBV_WC_SUCCESS) {
 					fprintf(stderr, "Failed status %s (%d) for wr_id %d\n",
