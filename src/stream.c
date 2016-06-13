@@ -9,7 +9,7 @@
 /**
  * Initialize the configuration to default values
  */
-void stream_init_cfg(struct stream_cfg *cfg) {
+void stream_init_cfg(struct stream_connect_cfg *cfg) {
 	cfg->ib_devname = NULL;
 	cfg->servername = NULL;
 	cfg->port = 18515;
@@ -33,7 +33,7 @@ enum ibv_mtu stream_mtu_to_enum(int mtu) {
 	}
 }
 
-int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx) {
+int stream_assign_device(struct stream_connect_cfg *cfg, struct stream_connect_ctx *ctx) {
 	struct ibv_device **dev_list;
 	struct ibv_device *ib_dev;
 	dev_list = ibv_get_device_list(NULL);
@@ -71,7 +71,7 @@ int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx) {
 /**
  * Initialize the stream context by creating the infiniband objects
  */
-int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
+int stream_init_ctx(struct stream_connect_cfg *cfg, struct stream_connect_ctx *ctx) {
 	ctx->size     = cfg->size;
 	ctx->rx_depth = cfg->rx_depth;
 
@@ -185,7 +185,7 @@ int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
 	return 0;
 }
 
-int stream_close_ctx(struct stream_context *ctx) {
+int stream_close_ctx(struct stream_connect_ctx *ctx) {
 	if (ibv_destroy_qp(ctx->qp)) {
 		fprintf(stderr, "Couldn't destroy QP\n");
 		return 1;
@@ -228,7 +228,7 @@ int stream_close_ctx(struct stream_context *ctx) {
 	return 0;
 }
 
-int stream_connect_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
+int stream_connect_ctx(struct stream_connect_cfg *cfg, struct stream_connect_ctx *ctx) {
 	int ret;
 	struct ibv_qp_attr attr = {
 			.qp_state = IBV_QPS_RTR,
@@ -285,7 +285,7 @@ int stream_connect_ctx(struct stream_cfg *cfg, struct stream_context *ctx) {
 	return 0;
 }
 
-int stream_post_recv_single(struct stream_context *ctx) {
+int stream_post_recv_single(struct stream_connect_ctx *ctx) {
 	int err, retries;
 
 	struct ibv_sge list = {
@@ -308,7 +308,7 @@ int stream_post_recv_single(struct stream_context *ctx) {
 	return err;
 }
 
-int stream_post_recv(struct stream_context *ctx, int n) {
+int stream_post_recv(struct stream_connect_ctx *ctx, int n) {
 	//printf("recv message\n");
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) ctx->buf,
@@ -330,7 +330,7 @@ int stream_post_recv(struct stream_context *ctx, int n) {
 	return i;
 }
 
-int stream_post_send(struct stream_context *ctx) {
+int stream_post_send(struct stream_connect_ctx *ctx) {
 	//printf("send message\n");
 	int err, retries;
 	struct ibv_sge list = {
@@ -355,9 +355,9 @@ int stream_post_send(struct stream_context *ctx) {
 	return err;
 }
 
-struct stream_context * stream_process_connect_request(struct stream_cfg *cfg, struct stream_dest *dest) {
+struct stream_connect_ctx * stream_process_connect_request(struct stream_connect_cfg *cfg, struct stream_dest *dest) {
   // first lets allocate the context
-  struct stream_context *ctx;
+  struct stream_connect_ctx *ctx;
   ctx = calloc(1, sizeof *ctx);
   if (!ctx) {
     goto error;

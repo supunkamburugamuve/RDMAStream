@@ -17,27 +17,27 @@
 
 #define MAX_CONNECTIONS 100
 
-int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx);
+int stream_process_messages(struct stream_connect_cfg *cfg, struct stream_connect_ctx *ctx);
 
 struct stream_connections {
-	struct stream_context *ctxs[MAX_CONNECTIONS];
+	struct stream_connect_ctx *ctxs[MAX_CONNECTIONS];
 	int count;
 };
 
 struct stream_tcp_server_info {
-	struct stream_cfg *cfg;
+	struct stream_connect_cfg *cfg;
 	struct stream_connections *conns;
 };
 
 struct stream_tcp_server_worker_info {
-	struct stream_cfg *cfg;
-	struct stream_context *context;
+	struct stream_connect_cfg *cfg;
+	struct stream_connect_ctx *context;
 };
 
 void *stream_tcp_server_worker_thread(void *thread) {
 	struct stream_tcp_server_worker_info *tcp_worker = (struct stream_tcp_server_worker_info *) thread;
-	struct stream_cfg *cfg = tcp_worker->cfg;
-	struct stream_context *ctx = tcp_worker->context;
+	struct stream_connect_cfg *cfg = tcp_worker->cfg;
+	struct stream_connect_ctx *ctx = tcp_worker->context;
 
 	printf("Start processing the request\n");
 	stream_process_messages(cfg, ctx);
@@ -49,7 +49,7 @@ void *stream_tcp_server_worker_thread(void *thread) {
  */
 void *stream_tcp_server_thread(void *thread) {
 	struct stream_tcp_server_info *tcp_server = (struct stream_tcp_server_info *) thread;
-	struct stream_cfg *cfg = tcp_server->cfg;
+	struct stream_connect_cfg *cfg = tcp_server->cfg;
 
 	struct addrinfo *res, *t;
 	struct addrinfo hints = {
@@ -104,7 +104,7 @@ void *stream_tcp_server_thread(void *thread) {
 		int connfd;
 		struct stream_dest *rem_dest = NULL;
 		char gid[33];
-		struct stream_context *ctx;
+		struct stream_connect_ctx *ctx;
 
 		connfd = accept(sockfd, NULL, 0);
 		if (connfd < 0) {
@@ -172,7 +172,7 @@ void *stream_tcp_server_thread(void *thread) {
 	}
 }
 
-int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) {
+int stream_process_messages(struct stream_connect_cfg *cfg, struct stream_connect_ctx *ctx) {
 	struct timeval start, end;
 
 	int iters = 1000;
@@ -294,8 +294,8 @@ int stream_process_messages(struct stream_cfg *cfg, struct stream_context *ctx) 
 	return 0;
 }
 
-static struct stream_dest *stream_server_exch_dest(struct stream_cfg *cfg,
-		struct stream_context *ctx,
+static struct stream_dest *stream_server_exch_dest(struct stream_connect_cfg *cfg,
+		struct stream_connect_ctx *ctx,
 		int ib_port, enum ibv_mtu mtu,
 		int port, int sl,
 		const struct stream_dest *my_dest,
@@ -411,7 +411,7 @@ static void usage(const char *argv0){
 
 int main(int argc, char *argv[]) {
 
-	struct stream_context *ctx;
+	struct stream_connect_ctx *ctx;
 
 	int num_cq_events = 0;
 	int	gidx = -1;
@@ -420,14 +420,14 @@ int main(int argc, char *argv[]) {
 	// server thread
 	pthread_t server_thread;
 
-	struct stream_cfg *cfg;
-	cfg = calloc(1, sizeof (struct stream_cfg));
+	struct stream_connect_cfg *cfg;
+	cfg = calloc(1, sizeof (struct stream_connect_cfg));
 	if (!cfg) {
 		return 1;
 	}
 	stream_init_cfg(cfg);
 
-	ctx = calloc(1, sizeof (struct stream_context));
+	ctx = calloc(1, sizeof (struct stream_connect_ctx));
 	if (!ctx) {
 		return 1;
 	}

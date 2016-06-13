@@ -25,7 +25,7 @@ struct stream_dest {
 /**
  * Keep track of the objects created for a connection.
  */
-struct stream_context {
+struct stream_connect_ctx {
 	struct ibv_context *context;
 	struct ibv_comp_channel *channel;
 	struct ibv_pd *pd;
@@ -48,7 +48,7 @@ struct stream_context {
 /**
  * Stream configurations.
  */
-struct stream_cfg {
+struct stream_connect_cfg {
 	char *ib_devname;     // device name, can be NULL and we use the first available device
 	char *servername;     // server IP address to connect to
 	int port;             // TCP port of the server
@@ -66,45 +66,45 @@ struct stream_cfg {
  * Create a connection using this information. This is done in the server
  */
 struct stream_connect_req {
-    struct stream_cfg *cfg;
+    struct stream_connect_cfg *cfg;
     struct stream_dest *dest;
 };
 
 /**
  * Initialize the configuration to default values
  */
-void stream_init_cfg(struct stream_cfg *cfg);
+void stream_init_cfg(struct stream_connect_cfg *cfg);
 
 /**
  * Get the requested device according to configuration.
  */
-int stream_assign_device(struct stream_cfg *cfg, struct stream_context *ctx);
+int stream_assign_device(struct stream_connect_cfg *cfg, struct stream_connect_ctx *ctx);
 
 /**
  * Connect the qps
  */
-int stream_connect_ctx(struct stream_cfg *cfg, struct stream_context *ctx);
+int stream_connect_ctx(struct stream_connect_cfg *cfg, struct stream_connect_ctx *ctx);
 
 /**
  * Initialize the infiniband objects
  */
-int stream_init_ctx(struct stream_cfg *cfg, struct stream_context *ctx);
+int stream_init_ctx(struct stream_connect_cfg *cfg, struct stream_connect_ctx *ctx);
 
 /**
  * Process a connect request from a client
  */
-struct stream_context * stream_process_connect_request(struct stream_cfg *cfg, struct stream_dest *dest);
+struct stream_connect_ctx * stream_process_connect_request(struct stream_connect_cfg *cfg, struct stream_dest *dest);
 
-int stream_post_recv(struct stream_context *ctx, int n);
-int stream_post_recv_single(struct stream_context *ctx);
-int stream_post_send(struct stream_context *ctx);
+int stream_post_recv(struct stream_connect_ctx *ctx, int n);
+int stream_post_recv_single(struct stream_connect_ctx *ctx);
+int stream_post_send(struct stream_connect_ctx *ctx);
 
-int stream_close_ctx(struct stream_context *ctx);
+int stream_close_ctx(struct stream_connect_ctx *ctx);
 
 /**
  * Server and client functions
  */
-int stream_server_connect(struct stream_context *ctx, struct stream_cfg *cfg,
+int stream_server_connect(struct stream_connect_ctx *ctx, struct stream_connect_cfg *cfg,
 		const struct stream_dest *self_dest);
 
 

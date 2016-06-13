@@ -84,7 +84,7 @@ out:
 	return rem_dest;
 }
 
-static struct stream_dest *stream_server_exch_dest(struct stream_context *ctx,
+static struct stream_dest *stream_server_exch_dest(struct stream_connect_ctx *ctx,
 						 int ib_port, enum ibv_mtu mtu,
 						 int port, int sl,
 						 const struct stream_dest *my_dest,
@@ -201,7 +201,7 @@ static void usage(const char *argv0) {
 }
 
 int main(int argc, char *argv[]) {
-	struct stream_context *ctx;
+	struct stream_connect_ctx *ctx;
 	struct timeval start, end;
 
 	int iters = 1000;
@@ -210,7 +210,7 @@ int main(int argc, char *argv[]) {
 	int num_cq_events = 0;
 	char gid[33];
 
-	struct stream_cfg cfg;
+	struct stream_connect_cfg cfg;
 	ctx = calloc(1, sizeof *ctx);
 	if (!ctx) {
 		return 1;
