@@ -61,7 +61,7 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
 		return NULL;
 	}
 
-	stream_dest_to_dest_message(&my_dest, &conn_msg.dest);
+	stream_dest_to_dest_message(my_dest, &conn_msg.dest);
 	//sprintf(msg, "%04x:%06x:%06x:%s", my_dest->lid, my_dest->qpn, my_dest->psn, gid);
 	gid_to_wire_gid(&my_dest->gid, gid);
 	printf("%d:%d:%d:%s\n", my_dest->lid, my_dest->qpn, my_dest->psn, gid);

@@ -411,7 +411,7 @@ int stream_dest_message_to_dest(struct stream_dest_message *msg, struct stream_d
 	dest->qpn = msg->qpn;
 	wire_gid_to_gid((char *)msg->gid, &dest->gid);
 
-	return 1;
+	return 0;
 }
 
 int stream_dest_to_dest_message(struct stream_dest *dest, struct stream_dest_message *msg) {
@@ -419,7 +419,7 @@ int stream_dest_to_dest_message(struct stream_dest *dest, struct stream_dest_mes
 	msg->psn = dest->psn;
 	msg->qpn = dest->qpn;
 	gid_to_wire_gid(&dest->gid, (char *)msg->gid);
-	return 1;
+	return 0;
 }
 
 void wire_gid_to_gid(char *wgid, union ibv_gid *gid) {
