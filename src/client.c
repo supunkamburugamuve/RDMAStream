@@ -65,6 +65,7 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
 	//sprintf(msg, "%04x:%06x:%06x:%s", my_dest->lid, my_dest->qpn, my_dest->psn, gid);
 	gid_to_wire_gid(&my_dest->gid, gid);
 	printf("%d:%d:%d:%s\n", my_dest->lid, my_dest->qpn, my_dest->psn, gid);
+
 	printf("my dest: %d:%d:%d:%s\n", conn_msg.dest.lid, conn_msg.dest.qpn, conn_msg.dest.psn, conn_msg.dest.gid);
 	stream_connect_message_copy_to_buffer(&conn_msg, buf);
 	if (write(sockfd, buf, buf_size) != buf_size) {
