@@ -63,7 +63,7 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
 
 	stream_dest_to_dest_message(&my_dest, &conn_msg.dest);
 	//sprintf(msg, "%04x:%06x:%06x:%s", my_dest->lid, my_dest->qpn, my_dest->psn, gid);
-	printf("my dest: %04x:%06x:%06x:%s", my_dest->lid, my_dest->qpn, my_dest->psn, conn_msg.dest.gid);
+	printf("my dest: %d:%d:%d:%s", my_dest->lid, my_dest->qpn, my_dest->psn, conn_msg.dest.gid);
 	stream_connect_message_copy_to_buffer(&conn_msg, buf);
 	if (write(sockfd, buf, buf_size) != buf_size) {
 		fprintf(stderr, "Couldn't send local address\n");
