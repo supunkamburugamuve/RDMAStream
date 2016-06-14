@@ -2,8 +2,9 @@
 #define IBV_STREAM_H
 
 #include <sys/param.h>
-
 #include <infiniband/verbs.h>
+
+#include "message.h"
 
 #define MAX_RETRIES    1
 
@@ -12,14 +13,13 @@ enum {
 	STREAM_SEND_WRID = 2,
 };
 
-/**
- * An RDMA destination. This information is needed to connect a Queue Pair.
- */
-struct stream_dest {
-	int lid;
-	int qpn;
-	int psn;
-	union ibv_gid gid;
+struct stream_buffer {
+	// set of buffers to hold the incoming messages
+	uint8_t **recv_bufs;
+	// current index of the buffer
+	uint16_t index;
+	// no of buffers allocated
+	uint16_t size;
 };
 
 /**
