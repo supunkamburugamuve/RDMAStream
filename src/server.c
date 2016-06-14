@@ -106,7 +106,7 @@ void *stream_tcp_server_thread(void *thread) {
 		int n;
 		int connfd;
 		struct stream_dest *rem_dest = NULL;
-		// char gid[33];
+		char gid[33];
 		struct stream_connect_ctx *ctx;
 
 		connfd = accept(sockfd, NULL, 0);
@@ -132,7 +132,8 @@ void *stream_tcp_server_thread(void *thread) {
 		//wire_gid_to_gid(conn_msg.dest.gid, &conn_msg->dest.gid);
 		stream_dest_message_to_dest(&conn_msg.dest, rem_dest);
 		printf("remote_dest: %d:%d:%d:%s\n", conn_msg.dest.lid, conn_msg.dest.qpn, conn_msg.dest.psn, conn_msg.dest.gid);
-		printf("remote_dest: %d:%d:%d:%s\n", rem_dest->lid, rem_dest->qpn, rem_dest->psn, conn_msg.dest.gid);
+		gid_to_wire_gid(rem_dest->gid, gid);
+		printf("remote_dest: %d:%d:%d:%s\n", rem_dest->lid, rem_dest->qpn, rem_dest->psn, gid);
 		printf("Connect context:\n");
 		ctx = stream_process_connect_request(cfg, rem_dest);
 		if (!ctx) {
