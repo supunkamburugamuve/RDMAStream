@@ -97,13 +97,16 @@ void *stream_tcp_server_thread(void *thread) {
 	}
 
 	listen(sockfd, 1);
-	char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
+	//char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
+	int buf_size = sizeof(struct stream_connect_message);
+	uint8_t *buf = (uint8_t *)malloc(buf_size);
+	struct stream_connect_message conn_msg;
 	while (1) {
 
 		int n;
 		int connfd;
 		struct stream_dest *rem_dest = NULL;
-		char gid[33];
+		// char gid[33];
 		struct stream_connect_ctx *ctx;
 
 		connfd = accept(sockfd, NULL, 0);
@@ -112,10 +115,10 @@ void *stream_tcp_server_thread(void *thread) {
 			return NULL;
 		}
 		printf("Wait for new connection:\n");
-		n = read(connfd, msg, sizeof msg);
-		if (n != sizeof msg) {
+		n = read(connfd, buf, buf_size);
+		if (n != sizeof buf_size) {
 			perror("server read");
-			fprintf(stderr, "%d/%d: Couldn't read remote address\n", n, (int) sizeof msg);
+			fprintf(stderr, "%d/%d: Couldn't read remote address\n", n, buf_size);
 			goto out;
 		}
 
@@ -124,8 +127,9 @@ void *stream_tcp_server_thread(void *thread) {
 			goto out;
 		}
 
-		sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
-		wire_gid_to_gid(gid, &rem_dest->gid);
+		//sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
+		stream_connect_message_copy_from_buffer(buf, &conn_msg);
+		wire_gid_to_gid(conn_msg.dest.gid, &rem_dest->gid);
 
 		printf("Connect context:\n");
 		ctx = stream_process_connect_request(cfg, rem_dest);
@@ -134,15 +138,19 @@ void *stream_tcp_server_thread(void *thread) {
 		}
 		printf("Connected context:\n");
 
-	  int routs = stream_post_recv(ctx, ctx->rx_depth);
+	    int routs = stream_post_recv(ctx, ctx->rx_depth);
 		if (routs < ctx->rx_depth) {
 			fprintf(stderr, "Couldn't post receive (%d)\n", routs);
 			return 1;
 		}
 
-		gid_to_wire_gid(&ctx->self_dest.gid, gid);
-		sprintf(msg, "%04x:%06x:%06x:%s", ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
-		if (write(connfd, msg, sizeof msg) != sizeof msg) {
+		gid_to_wire_gid(&ctx->self_dest.gid, conn_msg.dest.gid);
+		conn_msg.dest.lid = ctx->self_dest.lid;
+		conn_msg.dest.qpn = ctx->self_dest.qpn;
+		conn_msg.dest.psn = ctx->self_dest.psn;
+		// sprintf(msg, "%04x:%06x:%06x:%s", ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
+		stream_connect_message_copy_to_buffer(&conn_msg, buf);
+		if (write(connfd, buf, buf_size) != buf_size) {
 			fprintf(stderr, "Couldn't send local address\n");
 			free(rem_dest);
 			rem_dest = NULL;
@@ -150,7 +158,7 @@ void *stream_tcp_server_thread(void *thread) {
 		}
 
 		printf("Connected context 2 \n");
-		read(connfd, msg, sizeof msg);
+		read(connfd, buf, buf_size);
 
 		pthread_t worker_thread;
 		struct stream_tcp_server_worker_info * worker_ctx = calloc(1, sizeof (struct stream_tcp_server_worker_info));

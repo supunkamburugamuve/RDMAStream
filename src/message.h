@@ -10,7 +10,7 @@ struct stream_dest {
 	uint32_t lid;
 	uint32_t qpn;
 	uint32_t psn;
-	union ibv_gid gid;
+	uint8_t gid[33];
 };
 
 /**
@@ -47,6 +47,6 @@ struct stream_connect_message {
 
 int stream_data_message_copy_to_buffer(struct stream_message *msg, uint8_t *buf);
 int stream_connect_message_copy_to_buffer(struct stream_connect_message *msg, uint8_t *buf);
-struct stream_connect_message *stream_connect_message_copy_to_buffer(uint8_t *buf);
+int stream_connect_message_copy_from_buffer(uint8_t *buf, struct stream_connect_message *out);
 
 #endif /* IBV_BUFFER_H */

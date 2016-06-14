@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "message.h"
 
 int stream_data_message_copy_to_buffer(struct stream_message *msg, uint8_t *buf) {
@@ -21,9 +26,7 @@ int stream_connect_message_copy_to_buffer(struct stream_connect_message *msg, ui
 	memcpy(buf, (uint8_t *)msg, sizeof (struct stream_connet_message));
 }
 
-struct stream_connect_message *stream_connect_message_copy_to_buffer(uint8_t *buf) {
-	struct stream_connect_message *msg = NULL;
-	msg = (struct stream_connect_message *)malloc(sizeof(struct stream_connect_message));
-	memcpy(msg, (struct stream_connect_message *)buf, sizeof(struct stream_connect_message));
-	return msg;
+int stream_connect_message_copy_from_buffer(uint8_t *buf, struct stream_connect_message *out) {
+	memcpy(out, (struct stream_connect_message *)buf, sizeof(struct stream_connect_message));
+	return 1;
 }
