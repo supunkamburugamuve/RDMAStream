@@ -116,7 +116,7 @@ void *stream_tcp_server_thread(void *thread) {
 		}
 		printf("Wait for new connection:\n");
 		n = read(connfd, buf, buf_size);
-		if (n != sizeof buf_size) {
+		if (n != buf_size) {
 			perror("server read");
 			fprintf(stderr, "%d/%d: Couldn't read remote address\n", n, buf_size);
 			goto out;
