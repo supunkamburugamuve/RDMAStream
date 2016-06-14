@@ -136,7 +136,7 @@ void *stream_tcp_server_thread(void *thread) {
 		printf("Connect context:\n");
 		ctx = stream_process_connect_request(cfg, rem_dest);
 		if (!ctx) {
-			printf("Failed to connect context: \n");
+			printf("Failed to connect context.. \n");
 		}
 		printf("Connected context:\n");
 
