@@ -6,7 +6,7 @@
 /**
  * An RDMA destination. This information is needed to connect a Queue Pair.
  */
-struct stream_dest {
+struct stream_dest_message {
 	uint32_t lid;
 	uint32_t qpn;
 	uint32_t psn;
@@ -35,7 +35,7 @@ struct stream_message {
 
 struct stream_connect_message {
 	// the remote destination to connect
-	struct stream_dest dest;
+	struct stream_dest_message dest;
 	// starting number for sequence
 	uint64_t sequence_start;
 	// available credit for receiving messages.

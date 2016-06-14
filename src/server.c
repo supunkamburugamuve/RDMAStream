@@ -129,7 +129,8 @@ void *stream_tcp_server_thread(void *thread) {
 
 		//sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
 		stream_connect_message_copy_from_buffer(buf, &conn_msg);
-		wire_gid_to_gid(conn_msg.dest.gid, &rem_dest->gid);
+		//wire_gid_to_gid(conn_msg.dest.gid, &conn_msg->dest.gid);
+		stream_dest_message_to_dest(&conn_msg.dest, rem_dest);
 
 		printf("Connect context:\n");
 		ctx = stream_process_connect_request(cfg, rem_dest);
@@ -141,13 +142,10 @@ void *stream_tcp_server_thread(void *thread) {
 	    int routs = stream_post_recv(ctx, ctx->rx_depth);
 		if (routs < ctx->rx_depth) {
 			fprintf(stderr, "Couldn't post receive (%d)\n", routs);
-			return 1;
+			goto out;
 		}
 
-		gid_to_wire_gid(&ctx->self_dest.gid, conn_msg.dest.gid);
-		conn_msg.dest.lid = ctx->self_dest.lid;
-		conn_msg.dest.qpn = ctx->self_dest.qpn;
-		conn_msg.dest.psn = ctx->self_dest.psn;
+		stream_dest_to_dest_message(&ctx->self_dest, &conn_msg.dest);
 		// sprintf(msg, "%04x:%06x:%06x:%s", ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
 		stream_connect_message_copy_to_buffer(&conn_msg, buf);
 		if (write(connfd, buf, buf_size) != buf_size) {
@@ -423,7 +421,7 @@ int main(int argc, char *argv[]) {
 
 	int num_cq_events = 0;
 	int	gidx = -1;
-	char gid[33];
+	//char gid[33];
 	int iters;
 	// server thread
 	pthread_t server_thread;

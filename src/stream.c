@@ -405,7 +405,24 @@ int stream_get_port_info(struct ibv_context *context, int port,
 	return ibv_query_port(context, port, attr);
 }
 
-void wire_gid_to_gid(const char *wgid, union ibv_gid *gid) {
+int stream_dest_message_to_dest(struct stream_dest_message *msg, struct stream_dest *dest) {
+	dest->lid = msg->lid;
+	dest->psn = msg->psn;
+	dest->qpn = msg->qpn;
+	wire_gid_to_gid((char *)msg->gid, &dest->gid);
+
+	return 1;
+}
+
+int stream_dest_to_dest_message(struct stream_dest *dest, struct stream_dest_message *msg) {
+	msg->lid = dest->lid;
+	msg->psn = dest->psn;
+	msg->qpn = dest->qpn;
+	gid_to_wire_gid(&dest->gid, (char *)msg->gid);
+	return 1;
+}
+
+void wire_gid_to_gid(char *wgid, union ibv_gid *gid) {
 	char tmp[9];
 	uint32_t v32;
 	int i;
@@ -417,9 +434,10 @@ void wire_gid_to_gid(const char *wgid, union ibv_gid *gid) {
 	}
 }
 
-void gid_to_wire_gid(const union ibv_gid *gid, char wgid[]) {
+void gid_to_wire_gid(union ibv_gid *gid, char wgid[]) {
 	int i;
 
 	for (i = 0; i < 4; ++i)
 		sprintf(&wgid[i * 8], "%08x", htonl(*(uint32_t *)(gid->raw + i * 4)));
 }
+

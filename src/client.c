@@ -21,12 +21,16 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
 		.ai_family   = AF_INET,
 		.ai_socktype = SOCK_STREAM
 	};
+	int buf_size = sizeof(struct stream_connect_message);
+	uint8_t *buf = (uint8_t *)malloc(buf_size);
+	struct stream_connect_message conn_msg;
+
 	char *service;
-	char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
+	//char msg[sizeof "0000:000000:000000:00000000000000000000000000000000"];
 	int n;
 	int sockfd = -1;
 	struct stream_dest *rem_dest = NULL;
-	char gid[33];
+	//char gid[33];
 
 	if (asprintf(&service, "%d", port) < 0)
 		return NULL;
@@ -57,14 +61,15 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
 		return NULL;
 	}
 
-	gid_to_wire_gid(&my_dest->gid, gid);
-	sprintf(msg, "%04x:%06x:%06x:%s", my_dest->lid, my_dest->qpn, my_dest->psn, gid);
-	if (write(sockfd, msg, sizeof msg) != sizeof msg) {
+	stream_dest_to_dest_message(&my_dest, &conn_msg.dest);
+	//sprintf(msg, "%04x:%06x:%06x:%s", my_dest->lid, my_dest->qpn, my_dest->psn, gid);
+	stream_connect_message_copy_to_buffer(&conn_msg, buf);
+	if (write(sockfd, buf, buf_size) != buf_size) {
 		fprintf(stderr, "Couldn't send local address\n");
 		goto out;
 	}
 
-	if (read(sockfd, msg, sizeof msg) != sizeof msg) {
+	if (read(sockfd, buf, buf_size) != buf_size) {
 		perror("client read");
 		fprintf(stderr, "Couldn't read remote address\n");
 		goto out;
@@ -76,8 +81,10 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
 	if (!rem_dest)
 		goto out;
 
-	sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
-	wire_gid_to_gid(gid, &rem_dest->gid);
+	//sscanf(msg, "%x:%x:%x:%s", &rem_dest->lid, &rem_dest->qpn, &rem_dest->psn, gid);
+	stream_connect_message_copy_from_buffer(buf, &conn_msg.dest);
+	stream_dest_message_to_dest(&conn_msg, rem_dest);
+	// wire_gid_to_gid(gid, &rem_dest->gid);
 
 out:
 	close(sockfd);

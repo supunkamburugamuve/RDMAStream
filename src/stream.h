@@ -13,6 +13,17 @@ enum {
 	STREAM_SEND_WRID = 2,
 };
 
+/**
+ * An RDMA destination. This information is needed to connect a Queue Pair.
+ */
+struct stream_dest {
+	uint32_t lid;
+	uint32_t qpn;
+	uint32_t psn;
+	union ibv_gid gid;
+};
+
+
 struct stream_buffer {
 	// set of buffers to hold the messages
 	uint8_t **bufs;
@@ -118,7 +129,12 @@ enum ibv_mtu stream_mtu_to_enum(int mtu);
 uint16_t stream_get_local_lid(struct ibv_context *context, int port);
 int stream_get_port_info(struct ibv_context *context, int port,
 		struct ibv_port_attr *attr);
-void wire_gid_to_gid(const char *wgid, union ibv_gid *gid);
-void gid_to_wire_gid(const union ibv_gid *gid, char wgid[]);
+
+int stream_dest_to_dest_message(struct stream_dest *dest, struct stream_dest_message *msg);
+int stream_dest_message_to_dest(struct stream_dest_message *msg, struct stream_dest *dest);
+
+// private methods
+void wire_gid_to_gid(char *wgid, union ibv_gid *gid);
+void gid_to_wire_gid(union ibv_gid *gid, char wgid[]);
 
 #endif /* IBV_STREAM_H */
