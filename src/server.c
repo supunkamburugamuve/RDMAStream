@@ -131,7 +131,7 @@ void *stream_tcp_server_thread(void *thread) {
 		stream_connect_message_copy_from_buffer(buf, &conn_msg);
 		//wire_gid_to_gid(conn_msg.dest.gid, &conn_msg->dest.gid);
 		stream_dest_message_to_dest(&conn_msg.dest, rem_dest);
-
+		printf("remote_dest: %04x:%06x:%06x:%s", rem_dest.lid, rem_dest.qpn, rem_dest.psn, conn_msg.dest.gid);
 		printf("Connect context:\n");
 		ctx = stream_process_connect_request(cfg, rem_dest);
 		if (!ctx) {
@@ -147,7 +147,7 @@ void *stream_tcp_server_thread(void *thread) {
 
 		stream_dest_to_dest_message(&ctx->self_dest, &conn_msg.dest);
 		// sprintf(msg, "%04x:%06x:%06x:%s", ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, gid);
-		printf("destination: %04x:%06x:%06x:%s", ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, conn_msg.dest.gid);
+		printf("my_dest: %04x:%06x:%06x:%s", ctx->self_dest.lid, ctx->self_dest.qpn, ctx->self_dest.psn, conn_msg.dest.gid);
 		stream_connect_message_copy_to_buffer(&conn_msg, buf);
 		if (write(connfd, buf, buf_size) != buf_size) {
 			fprintf(stderr, "Couldn't send local address\n");
