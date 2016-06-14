@@ -69,9 +69,9 @@ static struct stream_dest *stream_client_exch_dest(const char *servername, int p
 		goto out;
 	}
 
-	if (read(sockfd, buf, buf_size) != buf_size) {
+	if ((n = read(sockfd, buf, buf_size)) != buf_size) {
 		perror("client read");
-		fprintf(stderr, "Couldn't read remote address\n");
+		fprintf(stderr, "%d/%d Couldn't read remote address\n", n, buf_size);
 		goto out;
 	}
 
