@@ -14,8 +14,9 @@ enum {
 };
 
 struct stream_buffer {
-	// set of buffers to hold the incoming messages
-	uint8_t **recv_bufs;
+	// set of buffers to hold the messages
+	uint8_t **bufs;
+	// set of send buffers
 	// current index of the buffer
 	uint16_t index;
 	// no of buffers allocated
@@ -43,6 +44,11 @@ struct stream_connect_ctx {
 	struct ibv_device *device;
 	struct stream_dest self_dest;   // self destination
 	struct stream_dest *rem_dest;   // remote destination
+
+	// memory mapped buffers for sending
+	struct stream_buffer send_buf;
+	// memory mapped buffers for receiving
+	struct stream_buffer recv_buf;
 };
 
 /**
