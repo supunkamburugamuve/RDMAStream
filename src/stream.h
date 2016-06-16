@@ -5,12 +5,23 @@
 #include <infiniband/verbs.h>
 
 #include "message.h"
+#include "buffer.h"
 
 #define MAX_RETRIES    1
+
+#define STREAM_OK              0x0000
+#define STREAM_ERROR_NOINIT    0x0001
+#define STREAM_ERROR           0x0002
+#define STREAM_ERROR_RESOURCE  0x0004
+#define STREAM_SHUTDOWN        0x0008
 
 enum {
 	STREAM_RECV_WRID = 1,
 	STREAM_SEND_WRID = 2,
+};
+
+struct stream_dest_credit {
+	int credit;
 };
 
 /**
@@ -23,21 +34,29 @@ struct stream_dest {
 	union ibv_gid gid;
 };
 
-
-struct stream_buffer {
-	// set of buffers to hold the messages
-	uint8_t **bufs;
-	// set of send buffers
-	// current index of the buffer
-	uint16_t index;
-	// no of buffers allocated
-	uint16_t size;
+/**
+ * Stream configurations.
+ */
+struct stream_connect_cfg {
+	char *ib_devname;     // device name, can be NULL and we use the first available device
+	char *servername;     // server IP address to connect to
+	int port;             // TCP port of the server
+	int ib_port;          // ib port
+	int size;             // size of the buffer
+	enum ibv_mtu mtu;
+	int rx_depth;         // receive depth
+	int use_event;
+	int sl;               // service level value
+	int gidx;             // gid value
+	int page_size;        // page size
 };
 
 /**
  * Keep track of the objects created for a connection.
  */
 struct stream_connect_ctx {
+	// pointer to the configuration used to create this connection
+	struct stream_connect_cfg *cfg;
 	struct ibv_context *context;
 	struct ibv_comp_channel *channel;
 	struct ibv_pd *pd;
@@ -60,24 +79,12 @@ struct stream_connect_ctx {
 	struct stream_buffer send_buf;
 	// memory mapped buffers for receiving
 	struct stream_buffer recv_buf;
+	// credit available for sending
+	struct stream_dest_credit self_credit;
+	// credit of the remote side
+	struct stream_dest_credit rem_credit;
 };
 
-/**
- * Stream configurations.
- */
-struct stream_connect_cfg {
-	char *ib_devname;     // device name, can be NULL and we use the first available device
-	char *servername;     // server IP address to connect to
-	int port;             // TCP port of the server
-	int ib_port;          // ib port
-	int size;             // size of the buffer
-	enum ibv_mtu mtu;
-	int rx_depth;         // receive depth
-	int use_event;
-	int sl;               // service level value
-	int gidx;             // gid value
-	int page_size;        // page size
-};
 
 /**
  * Create a connection using this information. This is done in the server
@@ -113,8 +120,9 @@ int stream_init_ctx(struct stream_connect_cfg *cfg, struct stream_connect_ctx *c
 struct stream_connect_ctx * stream_process_connect_request(struct stream_connect_cfg *cfg, struct stream_dest *dest);
 
 int stream_post_recv(struct stream_connect_ctx *ctx, int n);
-int stream_post_recv_single(struct stream_connect_ctx *ctx);
+int stream_post_recv_buf(struct stream_connect_ctx *ctx, uint8_t *buf, size);
 int stream_post_send(struct stream_connect_ctx *ctx);
+int stream_post_send_buf(struct stream_connect_ctx *ctx, uint8_t *buf, int size);
 
 int stream_close_ctx(struct stream_connect_ctx *ctx);
 

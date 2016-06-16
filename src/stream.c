@@ -285,12 +285,12 @@ int stream_connect_ctx(struct stream_connect_cfg *cfg, struct stream_connect_ctx
 	return 0;
 }
 
-int stream_post_recv_single(struct stream_connect_ctx *ctx) {
+int stream_post_recv_buf(struct stream_connect_ctx *ctx, uint8_t *buf, size) {
 	int err, retries;
 
 	struct ibv_sge list = {
-		.addr	= (uintptr_t) ctx->buf,
-		.length = ctx->size,
+		.addr	= (uintptr_t) buf,
+		.length = size,
 		.lkey	= ctx->mr->lkey
 	};
 	struct ibv_recv_wr wr = {
@@ -328,6 +328,31 @@ int stream_post_recv(struct stream_connect_ctx *ctx, int n) {
 		}
 	}
 	return i;
+}
+
+int stream_post_send_buf(struct stream_connect_ctx *ctx, uint8_t *buf, int size) {
+	//printf("send message\n");
+	int err, retries;
+	struct ibv_sge list = {
+		.addr = (uintptr_t) buf,
+		.length = size,
+		.lkey = ctx->mr->lkey
+	};
+	struct ibv_send_wr wr = {
+		.wr_id = STREAM_SEND_WRID,
+		.sg_list = &list,
+		.num_sge = 1,
+		.opcode = IBV_WR_SEND,
+		.send_flags = IBV_SEND_SIGNALED,
+	};
+	struct ibv_send_wr *bad_wr;
+
+	retries = MAX_RETRIES;
+	do {
+		err = ibv_post_send(ctx->qp, &wr, &bad_wr);
+	} while(err && --retries);
+
+	return err;
 }
 
 int stream_post_send(struct stream_connect_ctx *ctx) {
