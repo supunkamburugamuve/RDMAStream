@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define HEAD_FLAG 1
+#define TAIL_FLAG 2
+
 /**
  * An RDMA destination. This information is needed to connect a Queue Pair.
  */
@@ -18,9 +21,11 @@ struct stream_dest_message {
  */
 struct stream_message {
 	// flag to indicate head
-	uint8_t head;
+	uint8_t tail;
 	// sequence no
 	uint64_t sequence;
+	// no of parts
+	uint16_t no_parts;
 	// part no in case of multiple segments
 	uint16_t part;
 	// available credit to receive
@@ -30,7 +35,7 @@ struct stream_message {
 	// the actual data
 	uint8_t *buf;
 	// flag to indicate the tail
-	uint8_t tail;
+	uint8_t head;
 };
 
 struct stream_connect_message {

@@ -11,6 +11,8 @@ int stream_data_message_copy_to_buffer(struct stream_message *msg, uint8_t *buf)
 	address += sizeof (uint8_t);
 	memcpy(buf + address, (uint64_t *)&msg->sequence, sizeof (uint64_t));
 	address += sizeof (uint64_t);
+	memcpy(buf + address, (uint16_t *)&msg->no_parts, sizeof (uint16_t));
+	address += sizeof (uint16_t);
 	memcpy(buf + address, (uint16_t *)&msg->part, sizeof (uint16_t));
 	address += sizeof (uint16_t);
 	memcpy(buf + address, (uint16_t *)&msg->credit, sizeof (uint16_t));

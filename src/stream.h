@@ -52,6 +52,14 @@ struct stream_connect_cfg {
 };
 
 /**
+ * Keep track of the send and receive sequences
+ */
+struct stream_connect_seq {
+	uint64_t recv_seq;
+	uint64_t send_seq;
+};
+
+/**
  * Keep track of the objects created for a connection.
  */
 struct stream_connect_ctx {
@@ -83,6 +91,10 @@ struct stream_connect_ctx {
 	struct stream_dest_credit self_credit;
 	// credit of the remote side
 	struct stream_dest_credit rem_credit;
+	// sequence numbers for wire messages
+	struct stream_connect_seq wire_seq;
+	// sequence numbers for wr's submitted
+	struct stream_connect_seq wr_seq;
 };
 
 

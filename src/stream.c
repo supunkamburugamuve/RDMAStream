@@ -285,7 +285,7 @@ int stream_connect_ctx(struct stream_connect_cfg *cfg, struct stream_connect_ctx
 	return 0;
 }
 
-int stream_post_recv_buf(struct stream_connect_ctx *ctx, uint8_t *buf, size) {
+int stream_post_recv_buf(struct stream_connect_ctx *ctx, uint8_t *buf, uint64_t size) {
 	int err, retries;
 
 	struct ibv_sge list = {
@@ -316,7 +316,7 @@ int stream_post_recv(struct stream_connect_ctx *ctx, int n) {
 		.lkey	= ctx->mr->lkey
 	};
 	struct ibv_recv_wr wr = {
-		.wr_id = STREAM_RECV_WRID,
+		.wr_id = ctx->wr_seq.recv_seq++,
 		.sg_list = &list,
 		.num_sge = 1,
 	};
@@ -339,7 +339,7 @@ int stream_post_send_buf(struct stream_connect_ctx *ctx, uint8_t *buf, int size)
 		.lkey = ctx->mr->lkey
 	};
 	struct ibv_send_wr wr = {
-		.wr_id = STREAM_SEND_WRID,
+		.wr_id = ctx->wr_seq.send_seq++,
 		.sg_list = &list,
 		.num_sge = 1,
 		.opcode = IBV_WR_SEND,
