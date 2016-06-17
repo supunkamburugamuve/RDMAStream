@@ -27,6 +27,7 @@ struct stream_buffer {
 	uint32_t no_bufs;
 };
 
+int stream_buffer_cyclic_increment(int size, int current);
 int stream_buffer_allocate(struct stream_buffer *buffers, uint32_t buf_size, uint32_t no_bufs);
 void stream_buffer_increment_head(struct stream_buffer *buf);
 void stream_buffer_increment_tail(struct stream_buffer *buf);

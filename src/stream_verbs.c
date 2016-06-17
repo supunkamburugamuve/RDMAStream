@@ -1,5 +1,9 @@
 #include "stream.h"
 
+static int stream_add_message_to_buffer(struct stream_connect_ctx *ctx, char *buf, uint64_t size);
+static int stream_post_send_buffers(struct stream_connect_ctx *ctx);
+static int stream_send_complete(struct stream_connect_ctx *ctx, uint64_t id);
+
 /**
  * Create a single connection using a connection message
  */
@@ -28,11 +32,22 @@ int stream_send_msg(struct stream_connect_ctx *ctx, char *buf, uint64_t size) {
 	// if credit is available
 	ctx->rem_credit.credit--;
 
+
+
+	return STREAM_OK;
+}
+
+static int stream_add_message_to_buffer(struct stream_connect_ctx *ctx, char *buf, uint64_t size) {
 	// get the current buffer
 	struct stream_buffer *buffer = &ctx->send_buf;
-	stream_buffer_increment_head(buffer);
-	uint8_t *send_buf = buffer->buffers[ctx->send_buf.head];
+	// first lets check weather we have enough space for message
+	int head = stream_buffer_cyclic_increment(buffer->no_bufs, buffer->head);
+	// no space
+	if (head == buffer->tail) {
+		return STREAM_ERROR;
+	}
 
+	uint8_t *send_buf = buffer->buffers[ctx->send_buf.head];
 	// now prepare a send buffer
 	struct stream_message msg;
 	msg.buf = buf;
@@ -51,7 +66,10 @@ int stream_send_msg(struct stream_connect_ctx *ctx, char *buf, uint64_t size) {
 
 	stream_data_message_copy_to_buffer(msg, send_buf);
 	buffer->content_sizes[ctx->send_buf.head] = total_size;
-
+	// we will reset this to 0, this will indicate a send is in order
+	buffer->wr_ids[ctx->send_buf.head] = 0;
+	// now lets increment the head
+	stream_buffer_increment_head(buffer);
 	return STREAM_OK;
 }
 
@@ -60,25 +78,56 @@ int stream_send_msg(struct stream_connect_ctx *ctx, char *buf, uint64_t size) {
  */
 int stream_recv_msg(struct stream_connect_ctx *ctx, char *buf, int size) {
 	process_cq_event(ctx);
-
 	return 0;
+}
+
+/**
+ * Update the buffers after getting a send complete event
+ */
+static int stream_send_complete(struct stream_connect_ctx *ctx, uint64_t id) {
+	struct stream_buffer *buffer = &ctx->send_buf;
+	int ret;
+	int tail = buffer->tail;
+	int count = 0;
+	// head == buffer->tail means we don't have anything in the ring buffers
+	while (tail != buffer->head) {
+		// ok we have an item to send
+		if (buffer->wr_ids[tail] == id) {
+			buffer->wr_ids[tail] = 0;
+			// increment the tail if this is the first element
+			if (count == 0) {
+				stream_buffer_increment_tail(buffer);
+			} else {
+				fprintf(stderr, "Received a send completion out of order \n");
+				return STREAM_ERROR;
+			}
+		}
+		tail = stream_buffer_cyclic_increment(buffer->no_bufs, tail);
+	}
+	return STREAM_OK;
 }
 
 /**
  * Go through the buffers and send the buffers that are ready
  */
-int stream_post_send_buffers(struct stream_connect_ctx *ctx) {
+static int stream_post_send_buffers(struct stream_connect_ctx *ctx) {
 	struct stream_buffer *buffer = &ctx->send_buf;
 	int ret;
-	while (buffer->head != buffer->tail) {
 
-	}
-
-	// get the set of buffers required for sending
-	ret = stream_post_send_buf(ctx, send_buf, size);
-	if (ret) {
-		fprintf(stderr, "Failed to post the message\n");
-		return STREAM_ERROR;
+	int head = buffer->head;
+	// head == buffer->tail means we don't have anything in the ring buffers
+	while (head != buffer->tail) {
+		// ok we have in item to send
+		if (buffer->wr_ids[head] == 0) {
+			ret = stream_post_send_buf(ctx, buffer->buffers[head], buffer->content_sizes[head]);
+			if (ret) {
+				fprintf(stderr, "Failed to post the message\n");
+				return STREAM_ERROR;
+			} else {
+				buffer->wr_ids[head] = head;
+			}
+		}
+		head = stream_buffer_cyclic_increment(buffer->no_bufs, head);
 	}
 }
 

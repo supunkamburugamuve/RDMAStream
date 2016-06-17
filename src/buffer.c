@@ -12,6 +12,10 @@ int stream_buffer_allocate(struct stream_buffer *buffers, uint32_t buf_size, uin
 	return 0;
 }
 
+int stream_buffer_cyclic_increment(int size, int current) {
+	return size - 1 == current ? 0 : current + 1;
+}
+
 int stream_buffer_increment_head(struct stream_buffer *buf) {
 	int tail_previous = buf->tail == 0 ? buf->no_bufs - 1 : buf->tail - 1;
 	if (buf->head != tail_previous) {
