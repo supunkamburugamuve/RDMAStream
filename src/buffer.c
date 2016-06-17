@@ -12,22 +12,21 @@ int stream_buffer_allocate(struct stream_buffer *buffers, uint32_t buf_size, uin
 	return 0;
 }
 
-void stream_buffer_increment_head(struct stream_buffer *buf) {
-	if (buf->head != buf->tail) {
-		if (buf->head < buf->no_bufs - 1) {
-			buf->head++;
-		} else {
-			buf->head = 0;
-		}
+int stream_buffer_increment_head(struct stream_buffer *buf) {
+	int tail_previous = buf->tail == 0 ? buf->no_bufs - 1 : buf->tail - 1;
+	if (buf->head != tail_previous) {
+		buf->head = buf->head != buf->no_bufs - 1 ? buf->head + 1 : 0;
+		return 0;
+	} else {
+		return 1;
 	}
 }
 
-void stream_buffer_increment_tail(struct stream_buffer *buf) {
+int stream_buffer_increment_tail(struct stream_buffer *buf) {
 	if (buf->head != buf->tail) {
-		if (buf->tail < buf->no_bufs - 1) {
-			buf->tail++;
-		} else {
-			buf->tail = 0;
-		}
+		buf->tail = buf->tail != 0 ? buf->tail + 1 : buf->no_bufs -1;
+		return 0;
+	} else {
+		return 1;
 	}
 }
